@@ -3,6 +3,7 @@ import { setServerConfig } from '../utils/serverConfig';
 import { appendServerInfo } from '../utils/googleSheets';
 import { postOrUpdateInChannel } from '../utils/messageManager';
 import { Command } from '../types';
+import { logger } from '../utils/logger';
 
 const SetChannelCommand: Command = {
   data: new SlashCommandBuilder()
@@ -27,6 +28,7 @@ const SetChannelCommand: Command = {
 
 
     setServerConfig(interaction.guildId, channel.id);
+    logger.info(`✅ set-channel configured for server: ${interaction.guild?.name} (ID: ${interaction.guildId}), channel: #${channel.name} (${channel.id})`);
     // Save server info to Google Sheets
     await appendServerInfo(
       interaction.guildId,
