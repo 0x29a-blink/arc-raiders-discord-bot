@@ -50,7 +50,11 @@ export async function getServerConfigs(): Promise<ServerConfig> {
 /**
  * Adds or updates a server's configuration.
  */
-export async function setServerConfig(guildId: string, channelId: string, serverName?: string): Promise<void> {
+export async function setServerConfig(
+  guildId: string,
+  channelId: string,
+  serverName?: string
+): Promise<void> {
   try {
     const { data: existingConfig, error: selectError } = await supabase
       .from(SERVERS_TABLE)
@@ -105,7 +109,11 @@ export async function removeServerConfig(guildId: string): Promise<void> {
 /**
  * Updates the stored message metadata for a server.
  */
-export async function setServerMessageState(guildId: string, messageId: string, lastUpdated: string): Promise<void> {
+export async function setServerMessageState(
+  guildId: string,
+  messageId: string,
+  lastUpdated: string
+): Promise<void> {
   try {
     const { error } = await supabase
       .from(SERVERS_TABLE)

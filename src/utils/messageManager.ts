@@ -142,7 +142,11 @@ export async function postOrUpdateInChannel(
     let message: Message;
 
     // Check explicitly for null/undefined to handle database null values correctly
-    if (existingMessageId != null && typeof existingMessageId === 'string' && existingMessageId.trim() !== '') {
+    if (
+      existingMessageId != null &&
+      typeof existingMessageId === 'string' &&
+      existingMessageId.trim() !== ''
+    ) {
       try {
         message = await channel.messages.fetch(existingMessageId);
         await message.edit({ embeds: [embed] });
@@ -150,12 +154,12 @@ export async function postOrUpdateInChannel(
       } catch (error) {
         logger.warn(`Message not found in ${channelId}, creating a new one.`);
         message = await channel.send({ embeds: [embed] });
-        await message.pin();
+        await message.pin().catch(catchPinError);
         logger.info(`Created and pinned a new message in ${channelId}`);
       }
     } else {
       message = await channel.send({ embeds: [embed] });
-      await message.pin();
+      await message.pin().catch(catchPinError);
       logger.info(`Created and pinned a new message in ${channelId}`);
     }
 
@@ -182,3 +186,7 @@ export async function postOrUpdateMapMessages(client: Client): Promise<void> {
     await postOrUpdateInChannel(client, guildId, config.channelId, config.messageId);
   }
 }
+
+const catchPinError = (error: any) => {
+  logger.error({ error }, 'Error pinning message');
+};
