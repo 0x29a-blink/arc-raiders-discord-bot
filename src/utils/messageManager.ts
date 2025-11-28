@@ -1,6 +1,4 @@
 import { Client, TextChannel, EmbedBuilder, Message } from 'discord.js';
-import { getSheetData, updateSheetData } from './googleSheets';
-import { MessageDataStore } from '../types';
 import { logger } from './logger';
 import {
   getCurrentRotation,
@@ -9,41 +7,7 @@ import {
   formatCondition,
   CONDITION_COLORS,
 } from '../config/mapRotation';
-
-const SHEET_RANGE = 'MessageIds!A2:C'; // Assumes a sheet named MessageIds with columns: channelId, messageId, lastUpdated
-
-/**
- * Read message data from Google Sheets
- */
-export async function readMessageData(): Promise<MessageDataStore> {
-  try {
-    const rows = await getSheetData(SHEET_RANGE);
-    if (!rows || rows.length === 0) return {};
-    const store: MessageDataStore = {};
-    for (const row of rows) {
-      const [channelId, messageId, lastUpdated] = row;
-      if (channelId && messageId) {
-        store[channelId] = { channelId, messageId, lastUpdated };
-      }
-    }
-    return store;
-  } catch (error) {
-    logger.error({ err: error }, 'Error reading message data from Google Sheets');
-    return {};
-  }
-}
-
-/**
- * Save message data to Google Sheets
- */
-export async function saveMessageData(data: MessageDataStore): Promise<void> {
-  try {
-    const values = Object.values(data).map((d) => [d.channelId, d.messageId, d.lastUpdated]);
-    await updateSheetData(SHEET_RANGE, values);
-  } catch (error) {
-    logger.error({ err: error }, 'Error saving message data to Google Sheets');
-  }
-}
+import { getServerConfigs, setServerMessageState } from './serverConfig';
 
 /**
  * Create the map rotation embed
@@ -153,14 +117,19 @@ export function createMapRotationEmbed(): EmbedBuilder {
   return embed;
 }
 
-import { getServerConfigs } from './serverConfig';
-
 /**
  * Post or update the map rotation message in a specific channel.
  * @param {Client} client The Discord client.
- * @param {string} channelId The ID of the channel to post in.
+ * @param guildId The guild that owns the channel.
+ * @param channelId The ID of the channel to post in.
+ * @param existingMessageId Optional message ID to update instead of creating a new one.
  */
-export async function postOrUpdateInChannel(client: Client, channelId: string): Promise<void> {
+export async function postOrUpdateInChannel(
+  client: Client,
+  guildId: string,
+  channelId: string,
+  existingMessageId?: string
+): Promise<void> {
   try {
     const channel = (await client.channels.fetch(channelId)) as TextChannel;
 
@@ -170,34 +139,27 @@ export async function postOrUpdateInChannel(client: Client, channelId: string): 
     }
 
     const embed = createMapRotationEmbed();
-    const messageData = await readMessageData();
-    const storedData = messageData[channelId];
-
     let message: Message;
 
-    if (storedData?.messageId) {
+    // Check explicitly for null/undefined to handle database null values correctly
+    if (existingMessageId != null && typeof existingMessageId === 'string' && existingMessageId.trim() !== '') {
       try {
-        message = await channel.messages.fetch(storedData.messageId);
+        message = await channel.messages.fetch(existingMessageId);
         await message.edit({ embeds: [embed] });
-        logger.info(`✅ Updated message in channel ${channelId}`);
+        // Removing due to unnecessary spam.
       } catch (error) {
         logger.warn(`Message not found in ${channelId}, creating a new one.`);
         message = await channel.send({ embeds: [embed] });
         await message.pin();
-        logger.info(`✅ Created and pinned a new message in ${channelId}`);
+        logger.info(`Created and pinned a new message in ${channelId}`);
       }
     } else {
       message = await channel.send({ embeds: [embed] });
       await message.pin();
-      logger.info(`✅ Created and pinned a new message in ${channelId}`);
+      logger.info(`Created and pinned a new message in ${channelId}`);
     }
 
-    messageData[channelId] = {
-      channelId: channelId,
-      messageId: message.id,
-      lastUpdated: new Date().toISOString(),
-    };
-    await saveMessageData(messageData);
+    await setServerMessageState(guildId, message.id, new Date().toISOString());
   } catch (error) {
     logger.error({ err: error }, `Error processing channel ${channelId}`);
   }
@@ -209,14 +171,14 @@ export async function postOrUpdateInChannel(client: Client, channelId: string): 
  */
 export async function postOrUpdateMapMessages(client: Client): Promise<void> {
   const serverConfigs = await getServerConfigs();
-  const channelIds = Object.values(serverConfigs).map((config) => config.channelId);
+  const entries = Object.entries(serverConfigs);
 
-  if (channelIds.length === 0) {
+  if (entries.length === 0) {
     logger.info('No servers configured for updates.');
     return;
   }
 
-  for (const channelId of channelIds) {
-    await postOrUpdateInChannel(client, channelId);
+  for (const [guildId, config] of entries) {
+    await postOrUpdateInChannel(client, guildId, config.channelId, config.messageId);
   }
 }
