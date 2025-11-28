@@ -165,7 +165,10 @@ export async function postOrUpdateInChannel(
 
     await setServerMessageState(guildId, message.id, new Date().toISOString());
   } catch (error) {
-    logger.error({ err: error }, `Error processing channel ${channelId}`);
+    logger.error(
+      { type: error?.type, message: error?.message },
+      `Error processing channel ${channelId}`
+    );
   }
 }
 
