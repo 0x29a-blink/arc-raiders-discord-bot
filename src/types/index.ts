@@ -1,13 +1,15 @@
+import { SlashCommandBuilder, ChatInputCommandInteraction, Client, ClientEvents } from 'discord.js';
+
 export interface ServerConfigEntry {
   channelId: string;
   serverName?: string;
+  messageId?: string;
+  lastUpdated?: string;
 }
 
 export interface ServerConfig {
   [guildId: string]: ServerConfigEntry;
 }
-import { SlashCommandBuilder, ChatInputCommandInteraction, Client, ClientEvents } from 'discord.js';
-
 export interface Command {
   data: SlashCommandBuilder | Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'>;
   execute: (interaction: ChatInputCommandInteraction) => Promise<void>;
@@ -31,14 +33,4 @@ export interface MapRotation {
   blueGateMajor: string;
   stellaMontisMinor: string;
   stellaMontisMajor: string;
-}
-
-export interface MessageData {
-  channelId: string;
-  messageId: string;
-  lastUpdated: string;
-}
-
-export interface MessageDataStore {
-  [key: string]: MessageData;
 }

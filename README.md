@@ -31,6 +31,7 @@ The bot tracks these condition types across all maps:
 - Node.js 18.x or higher
 - npm or yarn
 - A Discord Bot Token from [Discord Developer Portal](https://discord.com/developers/applications)
+- Supabase project URL and Service Role key (used for persisting server/message metadata)
 
 ## Installation
 
@@ -60,6 +61,8 @@ The bot tracks these condition types across all maps:
    ```env
    DISCORD_TOKEN=your_bot_token_here
    CLIENT_ID=your_client_id_here
+   SUPABASE_URL=https://your-project.supabase.co
+   SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
    ```
 
 ## Discord Bot Setup
@@ -151,8 +154,6 @@ arc-raiders-discord-bot/
 │   │   └── mapRotation.ts  # 24-hour map schedule
 │   ├── types/              # TypeScript type definitions
 │   │   └── index.ts
-│   ├── data/               # Runtime data storage
-│   │   └── messageIds.json
 │   ├── index.ts            # Main entry point
 │   └── deploy-commands.ts  # Command registration script
 ├── .env                    # Environment variables (not in git)
@@ -163,16 +164,43 @@ arc-raiders-discord-bot/
 └── README.md
 ```
 
+## Data Storage
+
+All persistent state is stored in Supabase:
+
+- `servers` table – columns `guild_id` (primary key), `channel_id`, `server_name`, `message_id`, `last_updated`, plus timestamps if desired. `message_id` and `last_updated` let the bot reuse pinned messages instead of spamming new ones.
+
+You can back up or inspect this table directly in the Supabase dashboard. Deleting rows is safe; the bot will recreate them as needed.
+
+## Supabase Setup
+
+1. Create the required table (run once in the Supabase SQL editor):
+
+   ```sql
+   create table if not exists public.servers (
+     guild_id text primary key,
+     channel_id text not null,
+     server_name text,
+     message_id text,
+     last_updated text,
+     created_at timestamptz default timezone('utc', now()),
+     updated_at timestamptz default timezone('utc', now())
+   );
+   ```
+
+2. (Optional) Enable Row Level Security and add permissive policies if you plan to use the anon key. The bot uses the `SUPABASE_SERVICE_ROLE_KEY`, so it can bypass policies by default.
+3. Add `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` to your `.env`, matching the values in the Supabase dashboard.
+
 ## How It Works
 
 1. **Startup**: Bot logs in and immediately posts/updates the map rotation status
 2. **Scheduling**: A cron job runs at the top of every hour (UTC)
 3. **Updates**: The bot fetches current and next rotation from the 24-hour schedule
 4. **Message Management**:
-   - If a message exists (from `messageIds.json`), it's edited
-   - If not, a new message is created and pinned
-   - Message ID is saved for future updates
-5. **Persistence**: Message IDs are stored per channel, allowing the bot to resume updates after restarts
+   - Reads the stored `message_id` for each channel from Supabase
+   - Edits the existing pinned message or creates/pins a new one when needed
+   - Writes the latest `message_id`/`last_updated` back to Supabase
+5. **Persistence**: Because configuration and message metadata live in Supabase, the bot resumes seamlessly after restarts
 
 ## Troubleshooting
 
