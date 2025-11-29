@@ -1,6 +1,6 @@
 import { Interaction, ButtonInteraction, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBuilder } from 'discord.js';
 import { logger } from '../utils/logger';
-import { getCurrentRotation, getNextRotationTimestamp, formatCondition, CONDITION_EMOJIS, CONDITION_COLORS, MAP_ROTATIONS } from '../config/mapRotation';
+import { getCurrentRotation, getNextRotationTimestamp, formatCondition, formatLocationEvents, CONDITION_EMOJIS, CONDITION_COLORS, MAP_ROTATIONS } from '../config/mapRotation';
 import { generateMapImage } from '../utils/imageGenerator';
 
 export async function handleInteraction(interaction: Interaction) {
@@ -92,11 +92,11 @@ export async function handleInteraction(interaction: Interaction) {
     if (customId === 'view_overview') {
       embed.setDescription(
         `**Current Conditions**\nNext rotation: <t:${nextTimestamp}:R>\n\n` +
-        `**🏔️ Dam**\nMajor: ${formatCondition(current.damMajor)} | Minor: ${formatCondition(current.damMinor)}\n\n` +
-        `**🏛️ Buried City**\nMajor: ${formatCondition(current.buriedCityMajor)} | Minor: ${formatCondition(current.buriedCityMinor)}\n\n` +
-        `**🚀 Spaceport**\nMajor: ${formatCondition(current.spaceportMajor)} | Minor: ${formatCondition(current.spaceportMinor)}\n\n` +
-        `**🌉 Blue Gate**\nMajor: ${formatCondition(current.blueGateMajor)} | Minor: ${formatCondition(current.blueGateMinor)}\n\n` +
-        `**🏔️ Stella Montis**\nMajor: ${formatCondition(current.stellaMontisMajor)} | Minor: ${formatCondition(current.stellaMontisMinor)}`
+        `**🏔️ Dam**\n${formatLocationEvents(current.damMajor, current.damMinor)}\n\n` +
+        `**🏛️ Buried City**\n${formatLocationEvents(current.buriedCityMajor, current.buriedCityMinor)}\n\n` +
+        `**🚀 Spaceport**\n${formatLocationEvents(current.spaceportMajor, current.spaceportMinor)}\n\n` +
+        `**🌉 Blue Gate**\n${formatLocationEvents(current.blueGateMajor, current.blueGateMinor)}\n\n` +
+        `**🏔️ Stella Montis**\n${formatLocationEvents(current.stellaMontisMajor, current.stellaMontisMinor)}`
       );
 
 <<<<<<< HEAD
@@ -115,10 +115,10 @@ export async function handleInteraction(interaction: Interaction) {
          
          const events = [];
          if (rotation.damMajor !== 'None') events.push(`Dam: ${CONDITION_EMOJIS[rotation.damMajor]}`);
-         if (rotation.buriedCityMajor !== 'None') events.push(`Buried City: ${CONDITION_EMOJIS[rotation.buriedCityMajor]}`);
-         if (rotation.spaceportMajor !== 'None') events.push(`Spaceport: ${CONDITION_EMOJIS[rotation.spaceportMajor]}`);
-         if (rotation.blueGateMajor !== 'None') events.push(`Blue Gate: ${CONDITION_EMOJIS[rotation.blueGateMajor]}`);
-         if (rotation.stellaMontisMajor !== 'None') events.push(`Stella Montis: ${CONDITION_EMOJIS[rotation.stellaMontisMajor]}`);
+         if (rotation.buriedCityMajor !== 'None') events.push(`Buried: ${CONDITION_EMOJIS[rotation.buriedCityMajor]}`);
+         if (rotation.spaceportMajor !== 'None') events.push(`Space: ${CONDITION_EMOJIS[rotation.spaceportMajor]}`);
+         if (rotation.blueGateMajor !== 'None') events.push(`Gate: ${CONDITION_EMOJIS[rotation.blueGateMajor]}`);
+         if (rotation.stellaMontisMajor !== 'None') events.push(`Stella: ${CONDITION_EMOJIS[rotation.stellaMontisMajor]}`);
 
          if (events.length > 0) {
            forecastText += `**${timeLabel}** • ${events.join(' | ')}\n`;

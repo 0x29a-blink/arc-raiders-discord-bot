@@ -369,3 +369,21 @@ export function formatCondition(condition: string): string {
   const emoji = CONDITION_EMOJIS[condition] || "❓";
   return `${emoji} ${condition}`;
 }
+
+export function formatLocationEvents(major: string, minor: string): string {
+  const events = [];
+  
+  if (major !== 'None') {
+    events.push(`${formatCondition(major)} (2x)`);
+  }
+  
+  if (minor !== 'None') {
+    events.push(formatCondition(minor));
+  }
+  
+  if (events.length === 0) {
+    return 'None';
+  }
+  
+  return events.join('\n');
+}
