@@ -41,11 +41,14 @@ const SetChannelCommand: Command = {
       `Set-channel configured for server: ${interaction.guild?.name} (ID: ${interaction.guildId}), channel: #${channel.name} (${channel.id})`,
     );
 
-    // Trigger map status update only in the newly set channel
-    await postOrUpdateInChannel(interaction.client, interaction.guildId, channel.id);
-
+    // Reply immediately
     await interaction.editReply({
       content: `Map rotation updates will now be sent to #${channel.name}.`,
+    });
+
+    // Trigger map status update in the background (don't await)
+    postOrUpdateInChannel(interaction.client, interaction.guildId, channel.id).catch((error) => {
+      logger.error({ err: error }, `Failed to post initial update to ${channel.id}`);
     });
   },
 };
