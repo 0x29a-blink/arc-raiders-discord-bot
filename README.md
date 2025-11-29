@@ -2,6 +2,20 @@
 
 A Discord bot that tracks and displays Arc Raiders map rotation conditions across all four maps (Dam, Buried City, Spaceport, and Blue Gate) with automatic hourly updates.
 
+## Add the Bot to Your Server
+
+You can invite Arc Raiders Discord Bot to any Discord server using this link:
+
+[Add Arc Raiders Bot to your server](https://discord.com/oauth2/authorize?client_id=1442592163983528056)
+
+**How to use after inviting:**
+
+1. **Invite the bot** using the link above and authorize it for your server.
+2. **Set the update channel** by using the `/set-channel` slash command in the channel where you want map rotation updates to appear. Only server admins can use this command.
+3. The bot will automatically post and update the Arc Raiders map rotation status every hour in the designated channel.
+
+If you need to change the update channel, simply run `/set-channel` again in a different channel.
+
 ## Features
 
 - 🗺️ **Automatic Map Rotation Tracking**: Updates every hour with current and next map conditions
