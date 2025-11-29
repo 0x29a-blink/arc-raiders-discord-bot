@@ -72,14 +72,11 @@ export class HtmlRenderer {
       });
       const page = await browser.newPage();
 
-      // Set viewport to match the CSS width
       await page.setViewport({ width: 1240, height: 1200, deviceScaleFactor: 2 });
 
-      // Load template
       const htmlContent = fs.readFileSync(this.templatePath, 'utf-8');
       const cssContent = fs.readFileSync(this.stylesPath, 'utf-8');
 
-      // Inject CSS directly to avoid file loading issues
       const fullHtml = htmlContent.replace(
         '<link rel="stylesheet" href="styles.css">',
         `<style>${cssContent}</style>`
@@ -87,18 +84,13 @@ export class HtmlRenderer {
 
       await page.setContent(fullHtml, { waitUntil: 'networkidle0' });
 
-      // Load and inject map image
       const mapImagePath = path.join(__dirname, '../assets/map.png');
       const mapImageBuffer = fs.readFileSync(mapImagePath);
       const mapImageBase64 = `data:image/png;base64,${mapImageBuffer.toString('base64')}`;
-
-      // Inject Data
       await page.evaluate((data, locations, emojis, icons, mapImage) => {
-        // Set map background
         const mapImg = document.getElementById('map-bg');
         if (mapImg) mapImg.src = mapImage;
 
-        // Helper to get icon HTML
         const getIconHtml = (condition) => {
             if (icons[condition]) {
                 return `<img src="${icons[condition]}" class="condition-icon" alt="${condition}">`;
@@ -106,9 +98,6 @@ export class HtmlRenderer {
             return emojis[condition] || '';
         };
 
-
-
-        // 2. Generate Markers
         const overlaysContainer = document.getElementById('map-overlays');
         if (overlaysContainer) {
           Object.entries(locations).forEach(([key, loc]: [string, any]) => {
@@ -123,7 +112,6 @@ export class HtmlRenderer {
               statusHtml += `<div class="status-row status-minor">${getIconHtml(minor)} ${minor}</div>`;
             }
             if (major === 'None' && minor === 'None') {
-              // Only render name and pin if clear
               const marker = document.createElement('div');
               marker.className = 'location-marker';
               marker.style.left = `${loc.x}%`;
@@ -149,7 +137,6 @@ export class HtmlRenderer {
           });
         }
 
-        // 3. Generate Forecast
         const forecastGrid = document.getElementById('forecast-grid');
         if (forecastGrid) {
           data.forecast.forEach((rotation: any) => {

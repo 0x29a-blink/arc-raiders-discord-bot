@@ -1,6 +1,6 @@
 import type { MapRotation } from "../types";
 
-// Map condition emojis and colors
+// Go to https://discord.com/developers/applications/your-app-id/emojis and add the emojis from `./assets/` and copy the emoji ID and replace them in the object below.
 export const CONDITION_EMOJIS: { [key: string]: string } = {
   Harvester: '<:harvester:1444257508716974202>',
   Night: '<:nightraid:1444257504883376128>',
@@ -345,18 +345,12 @@ export const MAP_ROTATIONS: MapRotation[] = [
   },
 ];
 
-/**
- * Get the current map rotation based on UTC time
- */
 export function getCurrentRotation(): MapRotation {
   const now = new Date();
   const currentHour = now.getUTCHours();
   return MAP_ROTATIONS[currentHour];
 }
 
-/**
- * Get the next map rotation
- */
 export function getNextRotation(): MapRotation {
   const now = new Date();
   const currentHour = now.getUTCHours();
@@ -364,9 +358,6 @@ export function getNextRotation(): MapRotation {
   return MAP_ROTATIONS[nextHour];
 }
 
-/**
- * Get the timestamp for the next rotation change (top of next hour)
- */
 export function getNextRotationTimestamp(): number {
   const now = new Date();
   const nextHour = new Date(now);
@@ -374,9 +365,6 @@ export function getNextRotationTimestamp(): number {
   return Math.floor(nextHour.getTime() / 1000);
 }
 
-/**
- * Format a map condition with its emoji
- */
 export function formatCondition(condition: string): string {
   const emoji = CONDITION_EMOJIS[condition] || "❓";
   return `${emoji} ${condition}`;

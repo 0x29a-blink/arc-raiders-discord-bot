@@ -9,7 +9,6 @@ const renderer = new HtmlRenderer();
 
 export async function generateMapImage(currentRotation: MapRotation): Promise<Buffer> {
   try {
-    // Get next 6 hours for forecast
     const forecast: MapRotation[] = [];
     const currentHour = currentRotation.hour;
     for (let i = 1; i <= 6; i++) {
@@ -17,7 +16,6 @@ export async function generateMapImage(currentRotation: MapRotation): Promise<Bu
       forecast.push(MAP_ROTATIONS[hourIndex]);
     }
 
-    // Render image
     return await renderer.render({
       current: currentRotation,
       forecast: forecast,

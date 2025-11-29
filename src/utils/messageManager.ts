@@ -19,11 +19,9 @@ export async function createMapRotationEmbed(): Promise<{ embed: EmbedBuilder; f
   const current = getCurrentRotation();
   const nextTimestamp = getNextRotationTimestamp();
 
-  // Generate map image
   const mapBuffer = await generateMapImage(current);
   const mapAttachment = new AttachmentBuilder(mapBuffer, { name: 'map-status.png' });
 
-  // Determine embed color based on most severe current condition
   const primaryColor =
     CONDITION_COLORS[current.damMajor] || CONDITION_COLORS[current.damMinor] || 0x5865f2;
 
@@ -35,7 +33,6 @@ export async function createMapRotationEmbed(): Promise<{ embed: EmbedBuilder; f
     .setColor(primaryColor)
     .setImage('attachment://map-status.png')
     .addFields(
-      // Current Conditions Section
       {
         name: '━━━━━━ 📍 CURRENT CONDITIONS ━━━━━━',
         value: '\u200B',
@@ -67,7 +64,6 @@ export async function createMapRotationEmbed(): Promise<{ embed: EmbedBuilder; f
       }
     );
 
-  // Add Forecast Section (Next 6 Hours)
   let forecastText = '';
   const currentHour = current.hour;
   
@@ -77,7 +73,6 @@ export async function createMapRotationEmbed(): Promise<{ embed: EmbedBuilder; f
     const timestamp = nextTimestamp + (i - 1) * 3600;
     const timeLabel = `<t:${timestamp}:R>`;
     
-    // Collect significant events
     const events = [];
     if (rotation.damMajor !== 'None') events.push(`Dam: ${CONDITION_EMOJIS[rotation.damMajor]}`);
     if (rotation.buriedCityMajor !== 'None') events.push(`Buried: ${CONDITION_EMOJIS[rotation.buriedCityMajor]}`);
@@ -102,7 +97,6 @@ export async function createMapRotationEmbed(): Promise<{ embed: EmbedBuilder; f
 
   embed.setTimestamp().setFooter({ text: 'Arc Raiders Bot • Updates every hour' });
 
-  // Create Buttons
   const row1 = new ActionRowBuilder<ButtonBuilder>()
     .addComponents(
       new ButtonBuilder().setCustomId('view_map_dam').setLabel('Dam').setStyle(ButtonStyle.Secondary).setEmoji('🏔️'),
@@ -146,16 +140,9 @@ export async function postOrUpdateInChannel(
     const { embed, files, components } = await createMapRotationEmbed();
     let message: Message;
 
-    // Check explicitly for null/undefined to handle database null values correctly
-    if (
-      existingMessageId != null &&
-      typeof existingMessageId === "string" &&
-      existingMessageId.trim() !== ""
-    ) {
+    if (existingMessageId != null && typeof existingMessageId === 'string' && existingMessageId.trim() !== '') {
       try {
         message = await channel.messages.fetch(existingMessageId);
-        // We cannot edit attachments easily in the same way, usually we need to replace them.
-        // For simplicity and to ensure the image updates, we'll edit the embed and files.
         await message.edit({ embeds: [embed], files: files, components: components });
       } catch (error) {
         logger.warn(`Message not found in ${channelId}, creating a new one.`);
