@@ -90,15 +90,14 @@ export async function handleInteraction(interaction: Interaction) {
 
     // handle home / overview
     if (customId === 'view_overview') {
-      embed.addFields(
-        { name: '━━━━━━ 📍 CURRENT CONDITIONS ━━━━━━', value: '\u200B', inline: false },
-        { name: '🏔️ Dam', value: `Major: ${formatCondition(current.damMajor)}\nMinor: ${formatCondition(current.damMinor)}`, inline: true },
-        { name: '🏛️ Buried City', value: `Major: ${formatCondition(current.buriedCityMajor)}\nMinor: ${formatCondition(current.buriedCityMinor)}`, inline: true },
-        { name: '🚀 Spaceport', value: `Major: ${formatCondition(current.spaceportMajor)}\nMinor: ${formatCondition(current.spaceportMinor)}`, inline: true },
-        { name: '🌉 Blue Gate', value: `Major: ${formatCondition(current.blueGateMajor)}\nMinor: ${formatCondition(current.blueGateMinor)}`, inline: true },
-        { name: '🏔️ Stella Montis', value: `Major: ${formatCondition(current.stellaMontisMajor)}\nMinor: ${formatCondition(current.stellaMontisMinor)}`, inline: true },
-        { name: '\u200B', value: '\u200B', inline: true }
-       );
+      embed.setDescription(
+        `**Current Conditions**\nNext rotation: <t:${nextTimestamp}:R>\n\n` +
+        `**🏔️ Dam**\nMajor: ${formatCondition(current.damMajor)} | Minor: ${formatCondition(current.damMinor)}\n\n` +
+        `**🏛️ Buried City**\nMajor: ${formatCondition(current.buriedCityMajor)} | Minor: ${formatCondition(current.buriedCityMinor)}\n\n` +
+        `**🚀 Spaceport**\nMajor: ${formatCondition(current.spaceportMajor)} | Minor: ${formatCondition(current.spaceportMinor)}\n\n` +
+        `**🌉 Blue Gate**\nMajor: ${formatCondition(current.blueGateMajor)} | Minor: ${formatCondition(current.blueGateMinor)}\n\n` +
+        `**🏔️ Stella Montis**\nMajor: ${formatCondition(current.stellaMontisMajor)} | Minor: ${formatCondition(current.stellaMontisMinor)}`
+      );
 
 <<<<<<< HEAD
       const errorMessage = "There was an error while executing this command!";
@@ -116,10 +115,10 @@ export async function handleInteraction(interaction: Interaction) {
          
          const events = [];
          if (rotation.damMajor !== 'None') events.push(`Dam: ${CONDITION_EMOJIS[rotation.damMajor]}`);
-         if (rotation.buriedCityMajor !== 'None') events.push(`Buried: ${CONDITION_EMOJIS[rotation.buriedCityMajor]}`);
-         if (rotation.spaceportMajor !== 'None') events.push(`Space: ${CONDITION_EMOJIS[rotation.spaceportMajor]}`);
-         if (rotation.blueGateMajor !== 'None') events.push(`Gate: ${CONDITION_EMOJIS[rotation.blueGateMajor]}`);
-         if (rotation.stellaMontisMajor !== 'None') events.push(`Stella: ${CONDITION_EMOJIS[rotation.stellaMontisMajor]}`);
+         if (rotation.buriedCityMajor !== 'None') events.push(`Buried City: ${CONDITION_EMOJIS[rotation.buriedCityMajor]}`);
+         if (rotation.spaceportMajor !== 'None') events.push(`Spaceport: ${CONDITION_EMOJIS[rotation.spaceportMajor]}`);
+         if (rotation.blueGateMajor !== 'None') events.push(`Blue Gate: ${CONDITION_EMOJIS[rotation.blueGateMajor]}`);
+         if (rotation.stellaMontisMajor !== 'None') events.push(`Stella Montis: ${CONDITION_EMOJIS[rotation.stellaMontisMajor]}`);
 
          if (events.length > 0) {
            forecastText += `**${timeLabel}** • ${events.join(' | ')}\n`;
@@ -128,7 +127,7 @@ export async function handleInteraction(interaction: Interaction) {
          }
        }
        
-       embed.setDescription(description);
+       // embed.setDescription(description); // Removed as we set it above
        embed.addFields({
          name: '━━━━━━ 🔮 FORECAST (Next 6 Hours) ━━━━━━',
          value: forecastText || 'No major events upcoming.',
@@ -170,19 +169,23 @@ export async function handleInteraction(interaction: Interaction) {
         }
       }
       
-      embed.setDescription(`**Forecast for ${locationName}**`);
-      embed.setImage('attachment://map-status.png');
-      embed.setFields([]); 
+      let description = `**Forecast for ${locationName}**\nNext Rotation: <t:${nextTimestamp}:R>\n\n`;
       
       if (timeCol) {
-        embed.addFields(
-          { name: 'Time', value: timeCol, inline: true },
-          { name: 'Events', value: eventCol, inline: true },
-          { name: '\u200B', value: '\u200B', inline: true }
-        );
+          // Split by newlines to reconstruct the description line by line
+          const times = timeCol.split('\n').filter(t => t);
+          const events = eventCol.split('\n').filter(e => e);
+          
+          for(let i=0; i<times.length; i++) {
+              description += `**${times[i]}** • ${events[i]}\n`;
+          }
+      } else {
+          description += "No events upcoming in the next 24 hours.";
       }
       
-      embed.addFields({ name: 'Next Rotation', value: `<t:${nextTimestamp}:R>`, inline: false });
+      embed.setDescription(description);
+      embed.setImage('attachment://map-status.png');
+      embed.setFields([]);
       
       const buttons = getButtons('map');
       (buttons[1].components[2] as ButtonBuilder).setDisabled(false);
@@ -224,19 +227,22 @@ export async function handleInteraction(interaction: Interaction) {
         }
       }
       
-      embed.setDescription(`**Forecast for ${emoji} ${eventType}**`);
-      embed.setImage('attachment://map-status.png');
-      embed.setFields([]);
+      let description = `**Forecast for ${emoji} ${eventType}**\nNext Rotation: <t:${nextTimestamp}:R>\n\n`;
 
       if (timeCol) {
-        embed.addFields(
-          { name: 'Time', value: timeCol, inline: true },
-          { name: 'Locations', value: locCol, inline: true },
-          { name: '\u200B', value: '\u200B', inline: true }
-        );
+          const times = timeCol.split('\n').filter(t => t);
+          const locs = locCol.split('\n').filter(l => l);
+          
+          for(let i=0; i<times.length; i++) {
+              description += `**${times[i]}** • ${locs[i]}\n`;
+          }
+      } else {
+          description += "No events upcoming in the next 24 hours.";
       }
-
-      embed.addFields({ name: 'Next Rotation', value: `<t:${nextTimestamp}:R>`, inline: false });
+      
+      embed.setDescription(description);
+      embed.setImage('attachment://map-status.png');
+      embed.setFields([]);
 
       const majorEvents = ['Harvester', 'Night', 'Storm', 'Tower', 'Bunker', 'Matriarch'];
       const mode = majorEvents.includes(eventType) ? 'major' : 'minor';

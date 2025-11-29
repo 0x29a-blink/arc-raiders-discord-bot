@@ -28,41 +28,15 @@ export async function createMapRotationEmbed(): Promise<{ embed: EmbedBuilder; f
   const embed = new EmbedBuilder()
     .setTitle("🗺️ Arc Raiders - Map Rotation Status")
     .setDescription(
-      `**Current Conditions**\nNext rotation: <t:${nextTimestamp}:R>`
+      `**Current Conditions**\nNext rotation: <t:${nextTimestamp}:R>\n\n` +
+      `**🏔️ Dam**\nMajor: ${formatCondition(current.damMajor)} | Minor: ${formatCondition(current.damMinor)}\n\n` +
+      `**🏛️ Buried City**\nMajor: ${formatCondition(current.buriedCityMajor)} | Minor: ${formatCondition(current.buriedCityMinor)}\n\n` +
+      `**🚀 Spaceport**\nMajor: ${formatCondition(current.spaceportMajor)} | Minor: ${formatCondition(current.spaceportMinor)}\n\n` +
+      `**🌉 Blue Gate**\nMajor: ${formatCondition(current.blueGateMajor)} | Minor: ${formatCondition(current.blueGateMinor)}\n\n` +
+      `**🏔️ Stella Montis**\nMajor: ${formatCondition(current.stellaMontisMajor)} | Minor: ${formatCondition(current.stellaMontisMinor)}`
     )
     .setColor(primaryColor)
-    .setImage('attachment://map-status.png')
-    .addFields(
-      {
-        name: '━━━━━━ 📍 CURRENT CONDITIONS ━━━━━━',
-        value: '\u200B',
-        inline: false,
-      },
-      {
-        name: '🏔️ Dam',
-        value: `Major: ${formatCondition(current.damMajor)}\nMinor: ${formatCondition(current.damMinor)}`,
-        inline: true,
-      },
-      {
-        name: '🏛️ Buried City',
-        value: `Major: ${formatCondition(current.buriedCityMajor)}\nMinor: ${formatCondition(current.buriedCityMinor)}`,
-        inline: true,
-      },
-      {
-        name: '🚀 Spaceport',
-        value: `Major: ${formatCondition(current.spaceportMajor)}\nMinor: ${formatCondition(current.spaceportMinor)}`,
-        inline: true,
-      },
-      {
-        name: '🌉 Blue Gate',
-        value: `Major: ${formatCondition(current.blueGateMajor)}\nMinor: ${formatCondition(current.blueGateMinor)}`,
-        inline: true,
-      },
-      {
-        name: '🏔️ Stella Montis',
-        value: `Major: ${formatCondition(current.stellaMontisMajor)}\nMinor: ${formatCondition(current.stellaMontisMinor)}`,
-      }
-    );
+    .setImage('attachment://map-status.png');
 
   let forecastText = '';
   const currentHour = current.hour;
@@ -75,10 +49,10 @@ export async function createMapRotationEmbed(): Promise<{ embed: EmbedBuilder; f
     
     const events = [];
     if (rotation.damMajor !== 'None') events.push(`Dam: ${CONDITION_EMOJIS[rotation.damMajor]}`);
-    if (rotation.buriedCityMajor !== 'None') events.push(`Buried: ${CONDITION_EMOJIS[rotation.buriedCityMajor]}`);
-    if (rotation.spaceportMajor !== 'None') events.push(`Space: ${CONDITION_EMOJIS[rotation.spaceportMajor]}`);
-    if (rotation.blueGateMajor !== 'None') events.push(`Gate: ${CONDITION_EMOJIS[rotation.blueGateMajor]}`);
-    if (rotation.stellaMontisMajor !== 'None') events.push(`Stella: ${CONDITION_EMOJIS[rotation.stellaMontisMajor]}`);
+    if (rotation.buriedCityMajor !== 'None') events.push(`Buried City: ${CONDITION_EMOJIS[rotation.buriedCityMajor]}`);
+    if (rotation.spaceportMajor !== 'None') events.push(`Spaceport: ${CONDITION_EMOJIS[rotation.spaceportMajor]}`);
+    if (rotation.blueGateMajor !== 'None') events.push(`Blue Gate: ${CONDITION_EMOJIS[rotation.blueGateMajor]}`);
+    if (rotation.stellaMontisMajor !== 'None') events.push(`Stella Montis: ${CONDITION_EMOJIS[rotation.stellaMontisMajor]}`);
 
     if (events.length > 0) {
       forecastText += `**${timeLabel}** • ${events.join(' | ')}\n`;
