@@ -1,5 +1,7 @@
 # Arc Raiders Discord Bot
 
+[![Build & Lint](https://github.com/zfael/arc-raiders-discord-bot/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/zfael/arc-raiders-discord-bot/actions/workflows/build.yml)
+
 A Discord bot that tracks and displays Arc Raiders map rotation conditions across all four maps (Dam, Buried City, Spaceport, and Blue Gate) with automatic hourly updates.
 
 ## Add the Bot to Your Server
