@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, Client, ClientEvents } from 'discord.js';
+import type { ChatInputCommandInteraction, ClientEvents, SlashCommandBuilder } from "discord.js";
 
 export interface ServerConfigEntry {
   channelId: string;
@@ -11,14 +11,14 @@ export interface ServerConfig {
   [guildId: string]: ServerConfigEntry;
 }
 export interface Command {
-  data: SlashCommandBuilder | Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'>;
+  data: SlashCommandBuilder | Omit<SlashCommandBuilder, "addSubcommand" | "addSubcommandGroup">;
   execute: (interaction: ChatInputCommandInteraction) => Promise<void>;
 }
 
 export interface Event {
   name: keyof ClientEvents;
   once?: boolean;
-  execute: (...args: any[]) => Promise<void> | void;
+  execute: (...args: unknown[]) => Promise<void> | void;
 }
 
 export interface MapRotation {

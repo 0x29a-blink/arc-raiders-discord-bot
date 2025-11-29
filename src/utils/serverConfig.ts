@@ -1,8 +1,8 @@
-import { logger } from './logger';
-import { supabase } from './supabaseClient';
-import { ServerConfig } from '../types';
+import type { ServerConfig } from "../types";
+import { logger } from "./logger";
+import { supabase } from "./supabaseClient";
 
-const SERVERS_TABLE = 'servers';
+const SERVERS_TABLE = "servers";
 
 interface ServerRow {
   guild_id: string;
@@ -20,7 +20,7 @@ export async function getServerConfigs(): Promise<ServerConfig> {
   try {
     const { data, error } = await supabase
       .from(SERVERS_TABLE)
-      .select('guild_id, channel_id, server_name, message_id, last_updated');
+      .select("guild_id, channel_id, server_name, message_id, last_updated");
 
     if (error) {
       throw error;
@@ -42,7 +42,7 @@ export async function getServerConfigs(): Promise<ServerConfig> {
       return acc;
     }, {} as ServerConfig);
   } catch (error) {
-    logger.error({ err: error }, 'Error reading server configurations from Supabase');
+    logger.error({ err: error }, "Error reading server configurations from Supabase");
     return {};
   }
 }
@@ -53,13 +53,13 @@ export async function getServerConfigs(): Promise<ServerConfig> {
 export async function setServerConfig(
   guildId: string,
   channelId: string,
-  serverName?: string
+  serverName?: string,
 ): Promise<void> {
   try {
     const { data: existingConfig, error: selectError } = await supabase
       .from(SERVERS_TABLE)
-      .select('channel_id')
-      .eq('guild_id', guildId)
+      .select("channel_id")
+      .eq("guild_id", guildId)
       .maybeSingle();
 
     if (selectError) {
@@ -80,14 +80,14 @@ export async function setServerConfig(
     }
 
     const { error } = await supabase.from(SERVERS_TABLE).upsert(payload, {
-      onConflict: 'guild_id',
+      onConflict: "guild_id",
     });
 
     if (error) {
       throw error;
     }
   } catch (error) {
-    logger.error({ err: error }, 'Error saving server configuration to Supabase');
+    logger.error({ err: error }, "Error saving server configuration to Supabase");
   }
 }
 
@@ -96,13 +96,13 @@ export async function setServerConfig(
  */
 export async function removeServerConfig(guildId: string): Promise<void> {
   try {
-    const { error } = await supabase.from(SERVERS_TABLE).delete().eq('guild_id', guildId);
+    const { error } = await supabase.from(SERVERS_TABLE).delete().eq("guild_id", guildId);
 
     if (error) {
       throw error;
     }
   } catch (error) {
-    logger.error({ err: error }, 'Error removing server configuration from Supabase');
+    logger.error({ err: error }, "Error removing server configuration from Supabase");
   }
 }
 
@@ -112,7 +112,7 @@ export async function removeServerConfig(guildId: string): Promise<void> {
 export async function setServerMessageState(
   guildId: string,
   messageId: string,
-  lastUpdated: string
+  lastUpdated: string,
 ): Promise<void> {
   try {
     const { error } = await supabase
@@ -121,12 +121,12 @@ export async function setServerMessageState(
         message_id: messageId,
         last_updated: lastUpdated,
       })
-      .eq('guild_id', guildId);
+      .eq("guild_id", guildId);
 
     if (error) {
       throw error;
     }
   } catch (error) {
-    logger.error({ err: error }, 'Error saving server message state to Supabase');
+    logger.error({ err: error }, "Error saving server message state to Supabase");
   }
 }

@@ -1,7 +1,7 @@
-import { Client } from 'discord.js';
-import * as cron from 'node-cron';
-import { postOrUpdateMapMessages } from './messageManager';
-import { logger } from './logger';
+import type { Client } from "discord.js";
+import * as cron from "node-cron";
+import { logger } from "./logger";
+import { postOrUpdateMapMessages } from "./messageManager";
 
 /**
  * Update the map status message
@@ -10,7 +10,7 @@ export async function updateMapStatus(client: Client): Promise<void> {
   try {
     await postOrUpdateMapMessages(client);
   } catch (error) {
-    logger.error({ err: error }, 'Error updating map status');
+    logger.error({ err: error }, "Error updating map status");
   }
 }
 
@@ -23,15 +23,15 @@ export function initScheduler(client: Client): void {
   // Cron format: minute hour day month weekday
   // '0 * * * *' = at minute 0 of every hour
   cron.schedule(
-    '0 * * * *',
+    "0 * * * *",
     async () => {
-      logger.info('⏰ Hourly map rotation update triggered');
+      logger.info("⏰ Hourly map rotation update triggered");
       await updateMapStatus(client);
     },
     {
-      timezone: 'UTC',
-    }
+      timezone: "UTC",
+    },
   );
 
-  logger.info('📅 Map rotation scheduler initialized (runs every hour at :00)');
+  logger.info("📅 Map rotation scheduler initialized (runs every hour at :00)");
 }

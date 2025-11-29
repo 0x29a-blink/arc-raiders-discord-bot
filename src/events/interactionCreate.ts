@@ -1,9 +1,9 @@
-import { Interaction, ChatInputCommandInteraction } from 'discord.js';
-import { Event } from '../types';
-import { logger } from '../utils/logger';
+import type { ChatInputCommandInteraction, Interaction } from "discord.js";
+import type { Event } from "../types";
+import { logger } from "../utils/logger";
 
 const event: Event = {
-  name: 'interactionCreate',
+  name: "interactionCreate",
 
   async execute(interaction: Interaction) {
     if (!interaction.isChatInputCommand()) return;
@@ -21,7 +21,7 @@ const event: Event = {
     } catch (error) {
       logger.error({ err: error, command: interaction.commandName }, `Error executing command`);
 
-      const errorMessage = 'There was an error while executing this command!';
+      const errorMessage = "There was an error while executing this command!";
 
       if (interaction.replied || interaction.deferred) {
         await interaction.followUp({ content: errorMessage, ephemeral: true });
