@@ -53,7 +53,7 @@ for (const file of commandFiles) {
 const eventsPath = path.join(__dirname, "events");
 const eventFiles = fs
   .readdirSync(eventsPath)
-  .filter((file) => file.endsWith(".ts") || file.endsWith(".js"));
+  .filter((file) => (file.endsWith('.ts') || file.endsWith('.js')) && !file.includes('interactionCreate'));
 
 for (const file of eventFiles) {
   const filePath = path.join(eventsPath, file);
@@ -68,6 +68,11 @@ for (const file of eventFiles) {
 
 // Initialize the map rotation scheduler
 initScheduler(client);
+
+import { handleInteraction } from './events/interactionCreate';
+client.on('interactionCreate', async (interaction) => {
+  await handleInteraction(interaction);
+});
 
 // Graceful shutdown
 process.on("SIGINT", () => {

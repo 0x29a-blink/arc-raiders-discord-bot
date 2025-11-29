@@ -1,21 +1,27 @@
-import { type Client, EmbedBuilder, type Message, type TextChannel } from "discord.js";
+import { Client, TextChannel, EmbedBuilder, Message, AttachmentBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import { logger } from './logger';
 import {
   CONDITION_COLORS,
   formatCondition,
   getCurrentRotation,
   getNextRotation,
   getNextRotationTimestamp,
-} from "../config/mapRotation";
-import { logger } from "./logger";
-import { getServerConfigs, setServerMessageState } from "./serverConfig";
+  MAP_ROTATIONS,
+  CONDITION_EMOJIS,
+} from '../config/mapRotation';
+import { getServerConfigs, setServerMessageState } from './serverConfig';
+import { generateMapImage } from './imageGenerator';
 
 /**
  * Create the map rotation embed
  */
-export function createMapRotationEmbed(): EmbedBuilder {
+export async function createMapRotationEmbed(): Promise<{ embed: EmbedBuilder; files: AttachmentBuilder[]; components: ActionRowBuilder<ButtonBuilder>[] }> {
   const current = getCurrentRotation();
-  const next = getNextRotation();
   const nextTimestamp = getNextRotationTimestamp();
+
+  // Generate map image
+  const mapBuffer = await generateMapImage(current);
+  const mapAttachment = new AttachmentBuilder(mapBuffer, { name: 'map-status.png' });
 
   // Determine embed color based on most severe current condition
   const primaryColor =
@@ -24,97 +30,96 @@ export function createMapRotationEmbed(): EmbedBuilder {
   const embed = new EmbedBuilder()
     .setTitle("🗺️ Arc Raiders - Map Rotation Status")
     .setDescription(
-      `**Current Conditions** (UTC Hour: ${current.hour}:00)\nNext rotation: <t:${nextTimestamp}:R>`,
+      `**Current Conditions**\nNext rotation: <t:${nextTimestamp}:R>`
     )
     .setColor(primaryColor)
+    .setImage('attachment://map-status.png')
     .addFields(
       // Current Conditions Section
       {
-        name: "━━━━━━ 📍 CURRENT CONDITIONS ━━━━━━",
-        value: "\u200B", // Invisible character for spacing
+        name: '━━━━━━ 📍 CURRENT CONDITIONS ━━━━━━',
+        value: '\u200B',
         inline: false,
       },
       {
-        name: "🏔️ Dam",
-        value: `Minor: ${formatCondition(current.damMinor)}\nMajor: ${formatCondition(current.damMajor)}`,
+        name: '🏔️ Dam',
+        value: `Major: ${formatCondition(current.damMajor)}\nMinor: ${formatCondition(current.damMinor)}`,
         inline: true,
       },
       {
-        name: "🏛️ Buried City",
-        value: `Minor: ${formatCondition(current.buriedCityMinor)}\nMajor: ${formatCondition(current.buriedCityMajor)}`,
+        name: '🏛️ Buried City',
+        value: `Major: ${formatCondition(current.buriedCityMajor)}\nMinor: ${formatCondition(current.buriedCityMinor)}`,
         inline: true,
       },
       {
-        name: "🚀 Spaceport",
-        value: `Minor: ${formatCondition(current.spaceportMinor)}\nMajor: ${formatCondition(current.spaceportMajor)}`,
+        name: '🚀 Spaceport',
+        value: `Major: ${formatCondition(current.spaceportMajor)}\nMinor: ${formatCondition(current.spaceportMinor)}`,
         inline: true,
       },
       {
-        name: "🌉 Blue Gate",
-        value: `Minor: ${formatCondition(current.blueGateMinor)}\nMajor: ${formatCondition(current.blueGateMajor)}`,
+        name: '🌉 Blue Gate',
+        value: `Major: ${formatCondition(current.blueGateMajor)}\nMinor: ${formatCondition(current.blueGateMinor)}`,
         inline: true,
       },
       {
-        name: "🏔️ Stella Montis",
-        value: `Minor: ${formatCondition(current.stellaMontisMinor)}\nMajor: ${formatCondition(current.stellaMontisMajor)}`,
-        inline: true,
-      },
-      {
-        name: "\u200B",
-        value: "\u200B",
-        inline: true,
-      },
-      {
-        name: "\u200B",
-        value: "\u200B",
-        inline: true,
-      },
-      // Next Rotation Section
-      {
-        name: "━━━━━━ ⏭️ NEXT ROTATION ━━━━━━",
-        value: "\u200B",
-        inline: false,
-      },
-      {
-        name: "🏔️ Dam",
-        value: `Minor: ${formatCondition(next.damMinor)}\nMajor: ${formatCondition(next.damMajor)}`,
-        inline: true,
-      },
-      {
-        name: "🏛️ Buried City",
-        value: `Minor: ${formatCondition(next.buriedCityMinor)}\nMajor: ${formatCondition(next.buriedCityMajor)}`,
-        inline: true,
-      },
-      {
-        name: "🚀 Spaceport",
-        value: `Minor: ${formatCondition(next.spaceportMinor)}\nMajor: ${formatCondition(next.spaceportMajor)}`,
-        inline: true,
-      },
-      {
-        name: "🌉 Blue Gate",
-        value: `Minor: ${formatCondition(next.blueGateMinor)}\nMajor: ${formatCondition(next.blueGateMajor)}`,
-        inline: true,
-      },
-      {
-        name: "🏔️ Stella Montis",
-        value: `Minor: ${formatCondition(next.stellaMontisMinor)}\nMajor: ${formatCondition(next.stellaMontisMajor)}`,
-        inline: true,
-      },
-      {
-        name: "\u200B",
-        value: "\u200B",
-        inline: true,
-      },
-      {
-        name: "\u200B",
-        value: "\u200B",
-        inline: true,
-      },
-    )
-    .setTimestamp()
-    .setFooter({ text: "Arc Raiders Bot • Updates every hour" });
+        name: '🏔️ Stella Montis',
+        value: `Major: ${formatCondition(current.stellaMontisMajor)}\nMinor: ${formatCondition(current.stellaMontisMinor)}`,
+      }
+    );
 
-  return embed;
+  // Add Forecast Section (Next 6 Hours)
+  let forecastText = '';
+  const currentHour = current.hour;
+  
+  for (let i = 1; i <= 6; i++) {
+    const hourIndex = (currentHour + i) % 24;
+    const rotation = MAP_ROTATIONS[hourIndex];
+    const timestamp = nextTimestamp + (i - 1) * 3600;
+    const timeLabel = `<t:${timestamp}:R>`;
+    
+    // Collect significant events
+    const events = [];
+    if (rotation.damMajor !== 'None') events.push(`Dam: ${CONDITION_EMOJIS[rotation.damMajor]}`);
+    if (rotation.buriedCityMajor !== 'None') events.push(`Buried: ${CONDITION_EMOJIS[rotation.buriedCityMajor]}`);
+    if (rotation.spaceportMajor !== 'None') events.push(`Space: ${CONDITION_EMOJIS[rotation.spaceportMajor]}`);
+    if (rotation.blueGateMajor !== 'None') events.push(`Gate: ${CONDITION_EMOJIS[rotation.blueGateMajor]}`);
+    if (rotation.stellaMontisMajor !== 'None') events.push(`Stella: ${CONDITION_EMOJIS[rotation.stellaMontisMajor]}`);
+
+    if (events.length > 0) {
+      forecastText += `**${timeLabel}** • ${events.join(' | ')}\n`;
+    } else {
+      forecastText += `**${timeLabel}** • No Major Events\n`;
+    }
+  }
+
+  embed.addFields(
+    {
+      name: '━━━━━━ 🔮 FORECAST (Next 6 Hours) ━━━━━━',
+      value: forecastText || 'No major events upcoming.',
+      inline: false,
+    }
+  );
+
+  embed.setTimestamp().setFooter({ text: 'Arc Raiders Bot • Updates every hour' });
+
+  // Create Buttons
+  const row1 = new ActionRowBuilder<ButtonBuilder>()
+    .addComponents(
+      new ButtonBuilder().setCustomId('view_map_dam').setLabel('Dam').setStyle(ButtonStyle.Secondary).setEmoji('🏔️'),
+      new ButtonBuilder().setCustomId('view_map_buriedCity').setLabel('Buried City').setStyle(ButtonStyle.Secondary).setEmoji('🏛️'),
+      new ButtonBuilder().setCustomId('view_map_spaceport').setLabel('Spaceport').setStyle(ButtonStyle.Secondary).setEmoji('🚀'),
+      new ButtonBuilder().setCustomId('view_map_blueGate').setLabel('Blue Gate').setStyle(ButtonStyle.Secondary).setEmoji('🌉'),
+      new ButtonBuilder().setCustomId('view_map_stellaMontis').setLabel('Stella Montis').setStyle(ButtonStyle.Secondary).setEmoji('🏔️')
+    );
+
+  const row2 = new ActionRowBuilder<ButtonBuilder>()
+    .addComponents(
+      new ButtonBuilder().setCustomId('view_mode_major').setLabel('Show Major Events').setStyle(ButtonStyle.Primary).setEmoji('⚔️'),
+      new ButtonBuilder().setCustomId('view_mode_minor').setLabel('Show Minor Events').setStyle(ButtonStyle.Primary).setEmoji('🔍'),
+      new ButtonBuilder().setCustomId('view_overview').setLabel('Home').setStyle(ButtonStyle.Secondary).setEmoji('🏠').setDisabled(true)
+    );
+
+  return { embed, files: [mapAttachment], components: [row1, row2] };
 }
 
 /**
@@ -138,7 +143,7 @@ export async function postOrUpdateInChannel(
       return;
     }
 
-    const embed = createMapRotationEmbed();
+    const { embed, files, components } = await createMapRotationEmbed();
     let message: Message;
 
     // Check explicitly for null/undefined to handle database null values correctly
@@ -149,16 +154,17 @@ export async function postOrUpdateInChannel(
     ) {
       try {
         message = await channel.messages.fetch(existingMessageId);
-        await message.edit({ embeds: [embed] });
-        // Removing due to unnecessary spam.
-      } catch {
+        // We cannot edit attachments easily in the same way, usually we need to replace them.
+        // For simplicity and to ensure the image updates, we'll edit the embed and files.
+        await message.edit({ embeds: [embed], files: files, components: components });
+      } catch (error) {
         logger.warn(`Message not found in ${channelId}, creating a new one.`);
-        message = await channel.send({ embeds: [embed] });
+        message = await channel.send({ embeds: [embed], files: files, components: components });
         await message.pin().catch(catchPinError);
         logger.info(`Created and pinned a new message in ${channelId}`);
       }
     } else {
-      message = await channel.send({ embeds: [embed] });
+      message = await channel.send({ embeds: [embed], files: files, components: components });
       await message.pin().catch(catchPinError);
       logger.info(`Created and pinned a new message in ${channelId}`);
     }
