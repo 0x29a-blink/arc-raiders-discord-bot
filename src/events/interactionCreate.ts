@@ -2,6 +2,7 @@ import { Interaction, ButtonInteraction, EmbedBuilder, ActionRowBuilder, ButtonB
 import { logger } from '../utils/logger';
 import { getCurrentRotation, getNextRotationTimestamp, formatCondition, formatLocationEvents, CONDITION_EMOJIS, CONDITION_COLORS, MAP_ROTATIONS } from '../config/mapRotation';
 import { generateMapImage } from '../utils/imageGenerator';
+import { interactionLockManager } from '../utils/interactionLock';
 
 export async function handleInteraction(interaction: Interaction) {
   if (!interaction.isButton()) return;
@@ -10,6 +11,21 @@ export async function handleInteraction(interaction: Interaction) {
     await interaction.deferUpdate();
 
     const customId = interaction.customId;
+    const messageId = interaction.message.id;
+    const userId = interaction.user.id;
+
+    // Check lock status
+    if (!interactionLockManager.canInteract(messageId, userId)) {
+        const remaining = interactionLockManager.getRemainingTime(messageId);
+        await interaction.followUp({
+            content: `🚫 This menu is currently being used by another user. Please wait ${remaining} seconds.`,
+            ephemeral: true
+        });
+        return;
+    }
+
+    // Acquire or refresh lock automatically
+    interactionLockManager.acquireLock(messageId, userId, interaction.channelId!, interaction.guildId!);
     const current = getCurrentRotation();
     const nextTimestamp = getNextRotationTimestamp();
     

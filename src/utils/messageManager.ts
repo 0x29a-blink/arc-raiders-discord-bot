@@ -1,17 +1,15 @@
 import { Client, TextChannel, EmbedBuilder, Message, AttachmentBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { logger } from './logger';
-import {
   CONDITION_COLORS,
   formatCondition,
   getCurrentRotation,
   getNextRotation,
   getNextRotationTimestamp,
-  formatCondition,
   formatLocationEvents,
-  CONDITION_COLORS,
   MAP_ROTATIONS,
   CONDITION_EMOJIS,
 } from '../config/mapRotation';
+import { interactionLockManager } from './interactionLock';
 import { getServerConfigs, setServerMessageState } from './serverConfig';
 import { generateMapImage } from './imageGenerator';
 
@@ -160,6 +158,45 @@ export async function postOrUpdateMapMessages(client: Client): Promise<void> {
   }
 }
 
+<<<<<<< HEAD
 const catchPinError = (error) => {
   logger.error({ error }, "Error pinning message");
 };
+=======
+/**
+ * Sets up the lock expiration callback to revert messages to the home screen.
+ * @param client The Discord client.
+ */
+export function setupLockExpiration(client: Client) {
+    interactionLockManager.setExpirationCallback(async (messageId, channelId, guildId) => {
+        try {
+            const channel = await client.channels.fetch(channelId) as TextChannel;
+            if (!channel || !channel.isTextBased()) return;
+
+            const message = await channel.messages.fetch(messageId);
+            if (!message) return;
+
+            // Check if already on home screen (Home button disabled)
+            const components = message.components;
+            let isHome = false;
+            
+            // Check row 2 (index 1) for Home button (index 2)
+            if (components.length > 1) {
+                 const row2 = components[1] as any;
+                 const homeButton = row2.components.find((c: any) => c.customId === 'view_overview');
+                 if (homeButton && homeButton.disabled) {
+                     isHome = true;
+                 }
+            }
+
+            if (!isHome) {
+                const { embed, files, components } = await createMapRotationEmbed();
+                await message.edit({ embeds: [embed], files: files, components: components });
+                // logger.info({ messageId }, 'Reverted message to home screen after lock expiration');
+            }
+
+        } catch (error) {
+            // logger.error({ err: error }, 'Error reverting message to home screen');
+        }
+    });
+}

@@ -1,10 +1,11 @@
-import { Client, Collection, GatewayIntentBits } from "discord.js";
-import { config } from "dotenv";
-import * as fs from "node:fs";
-import * as path from "node:path";
-import type { Command, Event } from "./types";
-import { logger } from "./utils/logger";
-import { initScheduler } from "./utils/mapScheduler";
+import { Client, GatewayIntentBits, Collection } from 'discord.js';
+import { config } from 'dotenv';
+import * as fs from 'fs';
+import * as path from 'path';
+import { Command, Event } from './types';
+import { initScheduler } from './utils/mapScheduler';
+import { logger } from './utils/logger';
+import { setupLockExpiration } from './utils/messageManager';
 
 // Load environment variables
 config();
@@ -68,6 +69,7 @@ for (const file of eventFiles) {
 
 // Initialize the map rotation scheduler
 initScheduler(client);
+setupLockExpiration(client);
 
 import { handleInteraction } from './events/interactionCreate';
 client.on('interactionCreate', async (interaction) => {
