@@ -107,12 +107,15 @@ export async function handleInteraction(interaction: Interaction) {
     // handle home / overview
     if (customId === 'view_overview') {
       embed.setDescription(
-        `**Current Conditions**\nNext rotation: <t:${nextTimestamp}:R>\n\n` +
-        `**🏔️ Dam**\n${formatLocationEvents(current.damMajor, current.damMinor)}\n\n` +
-        `**🏛️ Buried City**\n${formatLocationEvents(current.buriedCityMajor, current.buriedCityMinor)}\n\n` +
-        `**🚀 Spaceport**\n${formatLocationEvents(current.spaceportMajor, current.spaceportMinor)}\n\n` +
-        `**🌉 Blue Gate**\n${formatLocationEvents(current.blueGateMajor, current.blueGateMinor)}\n\n` +
-        `**🏔️ Stella Montis**\n${formatLocationEvents(current.stellaMontisMajor, current.stellaMontisMinor)}`
+        `**Current Conditions**\nNext rotation: <t:${nextTimestamp}:R>`
+      );
+      embed.addFields(
+        { name: '🏔️ Dam', value: formatLocationEvents(current.damMajor, current.damMinor), inline: true },
+        { name: '🏛️ Buried City', value: formatLocationEvents(current.buriedCityMajor, current.buriedCityMinor), inline: true },
+        { name: '🚀 Spaceport', value: formatLocationEvents(current.spaceportMajor, current.spaceportMinor), inline: true },
+        { name: '🌉 Blue Gate', value: formatLocationEvents(current.blueGateMajor, current.blueGateMinor), inline: true },
+        { name: '\u200b', value: '\u200b', inline: true },
+        { name: '🏔️ Stella Montis', value: formatLocationEvents(current.stellaMontisMajor, current.stellaMontisMinor), inline: true }
       );
 
 <<<<<<< HEAD
