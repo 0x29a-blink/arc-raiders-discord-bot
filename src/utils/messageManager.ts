@@ -1,120 +1,239 @@
-import { type Client, EmbedBuilder, type Message, type TextChannel } from "discord.js";
+import {
+  ActionRowBuilder,
+  AttachmentBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  type Client,
+  EmbedBuilder,
+  type Message,
+  type TextChannel,
+} from "discord.js";
 import {
   CONDITION_COLORS,
-  formatCondition,
+  CONDITION_EMOJIS,
+  formatLocationEvents,
   getCurrentRotation,
-  getNextRotation,
   getNextRotationTimestamp,
+  MAP_ROTATIONS,
 } from "../config/mapRotation";
+import { generateMapImage } from "./imageGenerator";
+import { interactionLockManager } from "./interactionLock";
 import { logger } from "./logger";
 import { getServerConfigs, setServerMessageState } from "./serverConfig";
 
 /**
  * Create the map rotation embed
  */
-export function createMapRotationEmbed(): EmbedBuilder {
+export async function createMapRotationEmbed(mobileFriendly: boolean = false): Promise<{
+  embed: EmbedBuilder;
+  files: AttachmentBuilder[];
+  components: ActionRowBuilder<ButtonBuilder>[];
+}> {
   const current = getCurrentRotation();
-  const next = getNextRotation();
   const nextTimestamp = getNextRotationTimestamp();
 
-  // Determine embed color based on most severe current condition
+  const mapBuffer = await generateMapImage(current);
+  const mapAttachment = new AttachmentBuilder(mapBuffer, {
+    name: "map-status.png",
+  });
+
   const primaryColor =
     CONDITION_COLORS[current.damMajor] || CONDITION_COLORS[current.damMinor] || 0x5865f2;
 
   const embed = new EmbedBuilder()
     .setTitle("🗺️ Arc Raiders - Map Rotation Status")
-    .setDescription(
-      `**Current Conditions** (UTC Hour: ${current.hour}:00)\nNext rotation: <t:${nextTimestamp}:R>`,
-    )
+    .setDescription(`**Current Conditions**\nNext rotation: <t:${nextTimestamp}:R>`)
     .setColor(primaryColor)
-    .addFields(
-      // Current Conditions Section
-      {
-        name: "━━━━━━ 📍 CURRENT CONDITIONS ━━━━━━",
-        value: "\u200B", // Invisible character for spacing
-        inline: false,
-      },
-      {
-        name: "🏔️ Dam",
-        value: `Minor: ${formatCondition(current.damMinor)}\nMajor: ${formatCondition(current.damMajor)}`,
-        inline: true,
-      },
-      {
-        name: "🏛️ Buried City",
-        value: `Minor: ${formatCondition(current.buriedCityMinor)}\nMajor: ${formatCondition(current.buriedCityMajor)}`,
-        inline: true,
-      },
-      {
-        name: "🚀 Spaceport",
-        value: `Minor: ${formatCondition(current.spaceportMinor)}\nMajor: ${formatCondition(current.spaceportMajor)}`,
-        inline: true,
-      },
-      {
-        name: "🌉 Blue Gate",
-        value: `Minor: ${formatCondition(current.blueGateMinor)}\nMajor: ${formatCondition(current.blueGateMajor)}`,
-        inline: true,
-      },
-      {
-        name: "🏔️ Stella Montis",
-        value: `Minor: ${formatCondition(current.stellaMontisMinor)}\nMajor: ${formatCondition(current.stellaMontisMajor)}`,
-        inline: true,
-      },
-      {
-        name: "\u200B",
-        value: "\u200B",
-        inline: true,
-      },
-      {
-        name: "\u200B",
-        value: "\u200B",
-        inline: true,
-      },
-      // Next Rotation Section
-      {
-        name: "━━━━━━ ⏭️ NEXT ROTATION ━━━━━━",
-        value: "\u200B",
-        inline: false,
-      },
-      {
-        name: "🏔️ Dam",
-        value: `Minor: ${formatCondition(next.damMinor)}\nMajor: ${formatCondition(next.damMajor)}`,
-        inline: true,
-      },
-      {
-        name: "🏛️ Buried City",
-        value: `Minor: ${formatCondition(next.buriedCityMinor)}\nMajor: ${formatCondition(next.buriedCityMajor)}`,
-        inline: true,
-      },
-      {
-        name: "🚀 Spaceport",
-        value: `Minor: ${formatCondition(next.spaceportMinor)}\nMajor: ${formatCondition(next.spaceportMajor)}`,
-        inline: true,
-      },
-      {
-        name: "🌉 Blue Gate",
-        value: `Minor: ${formatCondition(next.blueGateMinor)}\nMajor: ${formatCondition(next.blueGateMajor)}`,
-        inline: true,
-      },
-      {
-        name: "🏔️ Stella Montis",
-        value: `Minor: ${formatCondition(next.stellaMontisMinor)}\nMajor: ${formatCondition(next.stellaMontisMajor)}`,
-        inline: true,
-      },
-      {
-        name: "\u200B",
-        value: "\u200B",
-        inline: true,
-      },
-      {
-        name: "\u200B",
-        value: "\u200B",
-        inline: true,
-      },
-    )
-    .setTimestamp()
-    .setFooter({ text: "Arc Raiders Bot • Updates every hour" });
+    .setImage("attachment://map-status.png");
 
-  return embed;
+  // Location Layout
+  if (mobileFriendly) {
+    // Mobile: Vertical list (non-inline fields)
+    embed.addFields(
+      {
+        name: "🏔️ Dam",
+        value: formatLocationEvents(current.damMajor, current.damMinor),
+        inline: false,
+      },
+      {
+        name: "🏛️ Buried City",
+        value: formatLocationEvents(current.buriedCityMajor, current.buriedCityMinor),
+        inline: false,
+      },
+      {
+        name: "🚀 Spaceport",
+        value: formatLocationEvents(current.spaceportMajor, current.spaceportMinor),
+        inline: false,
+      },
+      {
+        name: "🌉 Blue Gate",
+        value: formatLocationEvents(current.blueGateMajor, current.blueGateMinor),
+        inline: false,
+      },
+      {
+        name: "🏔️ Stella Montis",
+        value: formatLocationEvents(current.stellaMontisMajor, current.stellaMontisMinor),
+        inline: false,
+      },
+    );
+  } else {
+    // Desktop: Grid (inline fields)
+    embed.addFields(
+      {
+        name: "🏔️ Dam",
+        value: formatLocationEvents(current.damMajor, current.damMinor),
+        inline: true,
+      },
+      {
+        name: "🏛️ Buried City",
+        value: formatLocationEvents(current.buriedCityMajor, current.buriedCityMinor),
+        inline: true,
+      },
+      {
+        name: "🚀 Spaceport",
+        value: formatLocationEvents(current.spaceportMajor, current.spaceportMinor),
+        inline: true,
+      },
+      {
+        name: "🌉 Blue Gate",
+        value: formatLocationEvents(current.blueGateMajor, current.blueGateMinor),
+        inline: true,
+      },
+      { name: "\u200b", value: "\u200b", inline: true },
+      {
+        name: "🏔️ Stella Montis",
+        value: formatLocationEvents(current.stellaMontisMajor, current.stellaMontisMinor),
+        inline: true,
+      },
+    );
+  }
+
+  // Forecast Layout
+  const currentHour = current.hour;
+
+  if (mobileFriendly) {
+    // Mobile: List in Description/Value
+    let forecastText = "";
+    for (let i = 1; i <= 6; i++) {
+      const hourIndex = (currentHour + i) % 24;
+      const rotation = MAP_ROTATIONS[hourIndex];
+      const timestamp = nextTimestamp + (i - 1) * 3600;
+      const timeLabel = `<t:${timestamp}:R>`;
+
+      const events = [];
+      if (rotation.damMajor !== "None") events.push(`Dam: ${CONDITION_EMOJIS[rotation.damMajor]}`);
+      if (rotation.buriedCityMajor !== "None")
+        events.push(`Buried: ${CONDITION_EMOJIS[rotation.buriedCityMajor]}`);
+      if (rotation.spaceportMajor !== "None")
+        events.push(`Space: ${CONDITION_EMOJIS[rotation.spaceportMajor]}`);
+      if (rotation.blueGateMajor !== "None")
+        events.push(`Gate: ${CONDITION_EMOJIS[rotation.blueGateMajor]}`);
+      if (rotation.stellaMontisMajor !== "None")
+        events.push(`Stella: ${CONDITION_EMOJIS[rotation.stellaMontisMajor]}`);
+
+      if (events.length > 0) {
+        forecastText += `**${timeLabel}** • ${events.join(" | ")}\n`;
+      } else {
+        forecastText += `**${timeLabel}** • No Major Events\n`;
+      }
+    }
+
+    embed.addFields({
+      name: "━━━━━━ 🔮 FORECAST (Next 6 Hours) ━━━━━━",
+      value: forecastText || "No major events upcoming.",
+      inline: false,
+    });
+  } else {
+    // Desktop: Inline Fields
+    embed.addFields({
+      name: "━━━━━━ 🔮 FORECAST (Next 6 Hours) ━━━━━━",
+      value: "\u200b",
+      inline: false,
+    });
+
+    let timeCol = "";
+    let conditionCol = "";
+
+    for (let i = 1; i <= 6; i++) {
+      const hourIndex = (currentHour + i) % 24;
+      const rotation = MAP_ROTATIONS[hourIndex];
+      const timestamp = nextTimestamp + (i - 1) * 3600;
+      const timeLabel = `<t:${timestamp}:R>`;
+
+      const events = [];
+      if (rotation.damMajor !== "None") events.push(`Dam: ${CONDITION_EMOJIS[rotation.damMajor]}`);
+      if (rotation.buriedCityMajor !== "None")
+        events.push(`Buried: ${CONDITION_EMOJIS[rotation.buriedCityMajor]}`);
+      if (rotation.spaceportMajor !== "None")
+        events.push(`Space: ${CONDITION_EMOJIS[rotation.spaceportMajor]}`);
+      if (rotation.blueGateMajor !== "None")
+        events.push(`Gate: ${CONDITION_EMOJIS[rotation.blueGateMajor]}`);
+      if (rotation.stellaMontisMajor !== "None")
+        events.push(`Stella: ${CONDITION_EMOJIS[rotation.stellaMontisMajor]}`);
+
+      const eventText = events.length > 0 ? events.join(" | ") : "No Major Events";
+
+      timeCol += `${timeLabel}\n`;
+      conditionCol += `${eventText}\n`;
+    }
+
+    embed.addFields(
+      { name: "Time Until", value: timeCol, inline: true },
+      { name: "Conditions", value: conditionCol, inline: true },
+      { name: "\u200b", value: "\u200b", inline: true },
+    );
+  }
+
+  embed.setTimestamp().setFooter({ text: "Arc Raiders Bot • Updates every hour" });
+
+  const row1 = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId("view_map_dam")
+      .setLabel("Dam")
+      .setStyle(ButtonStyle.Secondary)
+      .setEmoji("🏔️"),
+    new ButtonBuilder()
+      .setCustomId("view_map_buriedCity")
+      .setLabel("Buried City")
+      .setStyle(ButtonStyle.Secondary)
+      .setEmoji("🏛️"),
+    new ButtonBuilder()
+      .setCustomId("view_map_spaceport")
+      .setLabel("Spaceport")
+      .setStyle(ButtonStyle.Secondary)
+      .setEmoji("🚀"),
+    new ButtonBuilder()
+      .setCustomId("view_map_blueGate")
+      .setLabel("Blue Gate")
+      .setStyle(ButtonStyle.Secondary)
+      .setEmoji("🌉"),
+    new ButtonBuilder()
+      .setCustomId("view_map_stellaMontis")
+      .setLabel("Stella Montis")
+      .setStyle(ButtonStyle.Secondary)
+      .setEmoji("🏔️"),
+  );
+
+  const row2 = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId("view_mode_major")
+      .setLabel("Show Major Events")
+      .setStyle(ButtonStyle.Primary)
+      .setEmoji("⚔️"),
+    new ButtonBuilder()
+      .setCustomId("view_mode_minor")
+      .setLabel("Show Minor Events")
+      .setStyle(ButtonStyle.Primary)
+      .setEmoji("🔍"),
+    new ButtonBuilder()
+      .setCustomId("view_overview")
+      .setLabel("Home")
+      .setStyle(ButtonStyle.Secondary)
+      .setEmoji("🏠")
+      .setDisabled(true),
+  );
+
+  return { embed, files: [mapAttachment], components: [row1, row2] };
 }
 
 /**
@@ -138,10 +257,13 @@ export async function postOrUpdateInChannel(
       return;
     }
 
-    const embed = createMapRotationEmbed();
+    const configs = await getServerConfigs();
+    const config = configs[guildId];
+    const mobileFriendly = config?.mobileFriendly ?? false;
+
+    const { embed, files, components } = await createMapRotationEmbed(mobileFriendly);
     let message: Message;
 
-    // Check explicitly for null/undefined to handle database null values correctly
     if (
       existingMessageId != null &&
       typeof existingMessageId === "string" &&
@@ -149,16 +271,27 @@ export async function postOrUpdateInChannel(
     ) {
       try {
         message = await channel.messages.fetch(existingMessageId);
-        await message.edit({ embeds: [embed] });
-        // Removing due to unnecessary spam.
-      } catch {
+        await message.edit({
+          embeds: [embed],
+          files: files,
+          components: components,
+        });
+      } catch (_error) {
         logger.warn(`Message not found in ${channelId}, creating a new one.`);
-        message = await channel.send({ embeds: [embed] });
+        message = await channel.send({
+          embeds: [embed],
+          files: files,
+          components: components,
+        });
         await message.pin().catch(catchPinError);
         logger.info(`Created and pinned a new message in ${channelId}`);
       }
     } else {
-      message = await channel.send({ embeds: [embed] });
+      message = await channel.send({
+        embeds: [embed],
+        files: files,
+        components: components,
+      });
       await message.pin().catch(catchPinError);
       logger.info(`Created and pinned a new message in ${channelId}`);
     }
@@ -190,6 +323,46 @@ export async function postOrUpdateMapMessages(client: Client): Promise<void> {
   }
 }
 
-const catchPinError = (error) => {
+const catchPinError = (error: any) => {
   logger.error({ error }, "Error pinning message");
 };
+/**
+ * Sets up the lock expiration callback to revert messages to the home screen.
+ * @param client The Discord client.
+ */
+export function setupLockExpiration(client: Client) {
+  interactionLockManager.setExpirationCallback(async (messageId, channelId, _guildId) => {
+    try {
+      const channel = (await client.channels.fetch(channelId)) as TextChannel;
+      if (!channel || !channel.isTextBased()) return;
+
+      const message = await channel.messages.fetch(messageId);
+      if (!message) return;
+
+      // Check if already on home screen (Home button disabled)
+      const components = message.components;
+      let isHome = false;
+
+      // Check row 2 (index 1) for Home button (index 2)
+      if (components.length > 1) {
+        const row2 = components[1] as any;
+        const homeButton = row2.components.find((c: any) => c.customId === "view_overview");
+        if (homeButton?.disabled) {
+          isHome = true;
+        }
+      }
+
+      if (!isHome) {
+        const { embed, files, components } = await createMapRotationEmbed();
+        await message.edit({
+          embeds: [embed],
+          files: files,
+          components: components,
+        });
+        // logger.info({ messageId }, 'Reverted message to home screen after lock expiration');
+      }
+    } catch (_error) {
+      // logger.error({ err: error }, 'Error reverting message to home screen');
+    }
+  });
+}

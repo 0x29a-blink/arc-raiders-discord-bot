@@ -1,10 +1,11 @@
-import { Client, Collection, GatewayIntentBits } from "discord.js";
-import { config } from "dotenv";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { Client, Collection, GatewayIntentBits } from "discord.js";
+import { config } from "dotenv";
 import type { Command, Event } from "./types";
 import { logger } from "./utils/logger";
 import { initScheduler } from "./utils/mapScheduler";
+import { setupLockExpiration } from "./utils/messageManager";
 
 // Load environment variables
 config();
@@ -53,7 +54,9 @@ for (const file of commandFiles) {
 const eventsPath = path.join(__dirname, "events");
 const eventFiles = fs
   .readdirSync(eventsPath)
-  .filter((file) => file.endsWith(".ts") || file.endsWith(".js"));
+  .filter(
+    (file) => (file.endsWith(".ts") || file.endsWith(".js")) && !file.includes("interactionCreate"),
+  );
 
 for (const file of eventFiles) {
   const filePath = path.join(eventsPath, file);
@@ -68,6 +71,40 @@ for (const file of eventFiles) {
 
 // Initialize the map rotation scheduler
 initScheduler(client);
+setupLockExpiration(client);
+
+import { handleInteraction } from "./events/interactionCreate";
+
+client.on("interactionCreate", async (interaction) => {
+  // Handle slash commands
+  if (interaction.isChatInputCommand()) {
+    const command = (client as any).commands.get(interaction.commandName);
+    if (!command) {
+      logger.warn(`No command matching ${interaction.commandName} was found.`);
+      return;
+    }
+
+    try {
+      await command.execute(interaction);
+    } catch (error) {
+      logger.error({ err: error }, `Error executing command ${interaction.commandName}`);
+      const errorMessage = {
+        content: "There was an error while executing this command!",
+        ephemeral: true,
+      };
+
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp(errorMessage);
+      } else {
+        await interaction.reply(errorMessage);
+      }
+    }
+    return;
+  }
+
+  // Handle button interactions
+  await handleInteraction(interaction);
+});
 
 // Graceful shutdown
 process.on("SIGINT", () => {

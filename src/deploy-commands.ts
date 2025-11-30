@@ -1,7 +1,7 @@
-import { REST, Routes } from "discord.js";
-import { config } from "dotenv";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { REST, Routes } from "discord.js";
+import { config } from "dotenv";
 import type { Command } from "./types";
 import { logger } from "./utils/logger";
 

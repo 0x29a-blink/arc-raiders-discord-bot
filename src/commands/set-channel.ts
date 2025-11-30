@@ -31,6 +31,9 @@ const SetChannelCommand: Command = {
       return;
     }
 
+    // Defer reply immediately to prevent timeout while generating image
+    await interaction.deferReply({ ephemeral: true });
+
     const channel = interaction.options.getChannel("channel", true) as TextChannel;
 
     await setServerConfig(interaction.guildId, channel.id, interaction.guild?.name || "Unknown");
@@ -38,12 +41,14 @@ const SetChannelCommand: Command = {
       `Set-channel configured for server: ${interaction.guild?.name} (ID: ${interaction.guildId}), channel: #${channel.name} (${channel.id})`,
     );
 
-    // Trigger map status update only in the newly set channel
-    await postOrUpdateInChannel(interaction.client, interaction.guildId, channel.id);
+    // Reply immediately
+    await interaction.editReply({
+      content: `Map rotation updates will now be sent to #${channel.name}.\n\n**Note:** The default view is optimized for **Desktop**. If your users are primarily on mobile, use \`/settings mobile-friendly: True\` to switch to a mobile-optimized layout.`,
+    });
 
-    await interaction.reply({
-      content: `Map rotation updates will now be sent to #${channel.name}.`,
-      ephemeral: true,
+    // Trigger map status update in the background (don't await)
+    postOrUpdateInChannel(interaction.client, interaction.guildId, channel.id).catch((error) => {
+      logger.error({ err: error }, `Failed to post initial update to ${channel.id}`);
     });
   },
 };

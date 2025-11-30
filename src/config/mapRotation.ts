@@ -1,32 +1,32 @@
 import type { MapRotation } from "../types";
 
-// Map condition emojis and colors
+// Go to https://discord.com/developers/applications/your-app-id/emojis and add the emojis from `./assets/` and copy the emoji ID and replace them in the object below.
 export const CONDITION_EMOJIS: { [key: string]: string } = {
-  Harvester: "🤖",
-  Night: "🌙",
-  Husks: "💀",
-  Blooms: "🌸",
-  Storm: "⛈️",
-  Caches: "📦",
-  Probes: "🛸",
-  Tower: "🗼",
-  Bunker: "🏰",
-  Matriarch: "👑",
-  None: "✅",
+  Harvester: "<:harvester:1444257508716974202>",
+  Night: "<:nightraid:1444257504883376128>",
+  Husks: "<:husks:1444257507706011718>",
+  Blooms: "<:lush:1444257506908966993>",
+  Storm: "<:electro:1444257509790715924>",
+  Caches: "<:cache:1444257510738493530>",
+  Probes: "<:probe:1444257504098779136>",
+  Tower: "<:spacetower_loot:1444257505961185482>",
+  Bunker: "<:bunker:1444257511598198794>",
+  Matriarch: "<:matriarch:1444257503100670073>",
+  None: " ",
 };
 
 export const CONDITION_COLORS: { [key: string]: number } = {
-  Harvester: 0xff6b35, // Orange-red
-  Night: 0x2c3e50, // Dark blue
-  Husks: 0x8b0000, // Dark red
-  Blooms: 0xff69b4, // Pink
-  Storm: 0x4a5568, // Gray-blue
-  Caches: 0xffd700, // Gold
-  Probes: 0x9370db, // Purple
-  Tower: 0x708090, // Slate gray
-  Bunker: 0x654321, // Brown
-  Matriarch: 0xffd700, // Gold
-  None: 0x2ecc71, // Green
+  Harvester: 0xd80c1a, // Red
+  Night: 0xd80c1a, // Red
+  Husks: 0xeed722, // Yellow
+  Blooms: 0xeed722, // Yellow
+  Storm: 0xd80c1a, // Red
+  Caches: 0xeed722, // Yellow
+  Probes: 0xeed722, // Yellow
+  Tower: 0xd80c1a, // Red
+  Bunker: 0xd80c1a, // Red
+  Matriarch: 0xd80c1a, // Red
+  None: 0x40fd86, // Green
 };
 
 // 24-hour map rotation schedule (UTC)
@@ -345,18 +345,12 @@ export const MAP_ROTATIONS: MapRotation[] = [
   },
 ];
 
-/**
- * Get the current map rotation based on UTC time
- */
 export function getCurrentRotation(): MapRotation {
   const now = new Date();
   const currentHour = now.getUTCHours();
   return MAP_ROTATIONS[currentHour];
 }
 
-/**
- * Get the next map rotation
- */
 export function getNextRotation(): MapRotation {
   const now = new Date();
   const currentHour = now.getUTCHours();
@@ -364,9 +358,6 @@ export function getNextRotation(): MapRotation {
   return MAP_ROTATIONS[nextHour];
 }
 
-/**
- * Get the timestamp for the next rotation change (top of next hour)
- */
 export function getNextRotationTimestamp(): number {
   const now = new Date();
   const nextHour = new Date(now);
@@ -374,10 +365,25 @@ export function getNextRotationTimestamp(): number {
   return Math.floor(nextHour.getTime() / 1000);
 }
 
-/**
- * Format a map condition with its emoji
- */
 export function formatCondition(condition: string): string {
   const emoji = CONDITION_EMOJIS[condition] || "❓";
   return `${emoji} ${condition}`;
+}
+
+export function formatLocationEvents(major: string, minor: string): string {
+  const events = [];
+
+  if (major !== "None") {
+    events.push(`${formatCondition(major)} (2x)`);
+  }
+
+  if (minor !== "None") {
+    events.push(formatCondition(minor));
+  }
+
+  if (events.length === 0) {
+    return "None";
+  }
+
+  return events.join("\n");
 }

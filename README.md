@@ -200,8 +200,14 @@ You can back up or inspect this table directly in the Supabase dashboard. Deleti
      message_id text,
      last_updated text,
      created_at timestamptz default timezone('utc', now()),
-     updated_at timestamptz default timezone('utc', now())
+     updated_at timestamptz default timezone('utc', now()),
+     mobile_friendly boolean default false,
    );
+   ```
+
+   To update the table to include the new mobile_friendly column, run the following SQL:
+   ```sql
+   alter table public.servers add column mobile_friendly boolean default false;
    ```
 
 2. (Optional) Enable Row Level Security and add permissive policies if you plan to use the anon key. The bot uses the `SUPABASE_SERVICE_ROLE_KEY`, so it can bypass policies by default.
