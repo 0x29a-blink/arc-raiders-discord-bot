@@ -2,16 +2,16 @@ import type { MapRotation } from "../types";
 
 // Go to https://discord.com/developers/applications/your-app-id/emojis and add the emojis from `./assets/` and copy the emoji ID and replace them in the object below.
 export const CONDITION_EMOJIS: { [key: string]: string } = {
-  Harvester: "<:harvester:1444257508716974202>",
-  Night: "<:nightraid:1444257504883376128>",
-  Husks: "<:husks:1444257507706011718>",
-  Blooms: "<:lush:1444257506908966993>",
-  Storm: "<:electro:1444257509790715924>",
-  Caches: "<:cache:1444257510738493530>",
-  Probes: "<:probe:1444257504098779136>",
-  Tower: "<:spacetower_loot:1444257505961185482>",
-  Bunker: "<:bunker:1444257511598198794>",
-  Matriarch: "<:matriarch:1444257503100670073>",
+  Harvester: "<:harvester:1444519669250658504>",
+  Night: "<:nightraid:1444519662711996637>",
+  Husks: "<:husks:1444519668063797248>",
+  Blooms: "<:lush:1444519666209787965>",
+  Storm: "<:electro:1444519670626390146>",
+  Caches: "<:cache:1444519671918366882>",
+  Probes: "<:probe:1444519661050925057>",
+  Tower: "<:spacetower_loot:1444519659310416043>",
+  Bunker: "<:bunker:1444519673289773238>",
+  Matriarch: "<:matriarch:1444519663860973620>",
   None: " ",
 };
 
