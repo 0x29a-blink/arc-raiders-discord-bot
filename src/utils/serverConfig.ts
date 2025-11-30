@@ -10,6 +10,7 @@ interface ServerRow {
   server_name: string | null;
   message_id: string | null;
   last_updated: string | null;
+  mobile_friendly: boolean | null;
 }
 
 /**
@@ -20,7 +21,7 @@ export async function getServerConfigs(): Promise<ServerConfig> {
   try {
     const { data, error } = await supabase
       .from(SERVERS_TABLE)
-      .select("guild_id, channel_id, server_name, message_id, last_updated");
+      .select('guild_id, channel_id, server_name, message_id, last_updated, mobile_friendly');
 
     if (error) {
       throw error;
@@ -38,6 +39,7 @@ export async function getServerConfigs(): Promise<ServerConfig> {
         serverName: row.server_name ?? undefined,
         messageId: row.message_id ?? undefined,
         lastUpdated: row.last_updated ?? undefined,
+        mobileFriendly: row.mobile_friendly ?? false,
       };
       return acc;
     }, {} as ServerConfig);
@@ -68,7 +70,7 @@ export async function setServerConfig(
 
     const channelChanged = existingConfig && existingConfig.channel_id !== channelId;
 
-    const payload: Record<string, string | null> = {
+    const payload: Record<string, string | null | boolean> = {
       guild_id: guildId,
       channel_id: channelId,
       server_name: serverName ?? null,
@@ -88,6 +90,25 @@ export async function setServerConfig(
     }
   } catch (error) {
     logger.error({ err: error }, "Error saving server configuration to Supabase");
+  }
+}
+
+/**
+ * Updates the mobile friendly setting for a server.
+ */
+export async function setMobileFriendly(guildId: string, enabled: boolean): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from(SERVERS_TABLE)
+      .update({ mobile_friendly: enabled })
+      .eq('guild_id', guildId);
+
+    if (error) {
+      throw error;
+    }
+  } catch (error) {
+    logger.error({ err: error }, 'Error updating mobile friendly setting');
+    throw error;
   }
 }
 

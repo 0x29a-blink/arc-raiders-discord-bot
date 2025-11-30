@@ -43,7 +43,7 @@ const SetChannelCommand: Command = {
 
     // Reply immediately
     await interaction.editReply({
-      content: `Map rotation updates will now be sent to #${channel.name}.`,
+      content: `Map rotation updates will now be sent to #${channel.name}.\n\n**Note:** The default view is optimized for **Desktop**. If your users are primarily on mobile, use \`/settings mobile-friendly: True\` to switch to a mobile-optimized layout.`,
     });
 
     // Trigger map status update in the background (don't await)
