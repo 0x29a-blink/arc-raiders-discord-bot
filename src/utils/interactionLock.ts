@@ -1,5 +1,3 @@
-
-
 interface Lock {
   userId: string;
   expiresAt: number;
@@ -16,7 +14,7 @@ class InteractionLockManager {
   private expirationCallback: ExpirationCallback | null = null;
 
   setExpirationCallback(callback: ExpirationCallback) {
-      this.expirationCallback = callback;
+    this.expirationCallback = callback;
   }
 
   /**
@@ -37,15 +35,15 @@ class InteractionLockManager {
 
     // Clear existing timeout if refreshing
     if (currentLock) {
-        clearTimeout(currentLock.timeout);
+      clearTimeout(currentLock.timeout);
     }
 
     // Set new lock
     const timeout = setTimeout(() => {
-        this.locks.delete(messageId);
-        if (this.expirationCallback) {
-            this.expirationCallback(messageId, channelId, guildId);
-        }
+      this.locks.delete(messageId);
+      if (this.expirationCallback) {
+        this.expirationCallback(messageId, channelId, guildId);
+      }
     }, this.LOCK_DURATION_MS);
 
     this.locks.set(messageId, {
@@ -53,9 +51,9 @@ class InteractionLockManager {
       expiresAt: now + this.LOCK_DURATION_MS,
       channelId,
       guildId,
-      timeout
+      timeout,
     });
-    
+
     return true;
   }
 
@@ -72,8 +70,8 @@ class InteractionLockManager {
     // No lock or lock expired
     if (!currentLock || currentLock.expiresAt <= now) {
       if (currentLock) {
-          clearTimeout(currentLock.timeout);
-          this.locks.delete(messageId); // Clean up expired lock
+        clearTimeout(currentLock.timeout);
+        this.locks.delete(messageId); // Clean up expired lock
       }
       return true;
     }
@@ -93,14 +91,14 @@ class InteractionLockManager {
    * @returns Seconds remaining or 0 if not locked/expired.
    */
   getRemainingTime(messageId: string): number {
-      const now = Date.now();
-      const currentLock = this.locks.get(messageId);
-      
-      if (!currentLock || currentLock.expiresAt <= now) {
-          return 0;
-      }
-      
-      return Math.ceil((currentLock.expiresAt - now) / 1000);
+    const now = Date.now();
+    const currentLock = this.locks.get(messageId);
+
+    if (!currentLock || currentLock.expiresAt <= now) {
+      return 0;
+    }
+
+    return Math.ceil((currentLock.expiresAt - now) / 1000);
   }
 }
 

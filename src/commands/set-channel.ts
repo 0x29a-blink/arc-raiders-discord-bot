@@ -34,7 +34,7 @@ const SetChannelCommand: Command = {
     // Defer reply immediately to prevent timeout while generating image
     await interaction.deferReply({ ephemeral: true });
 
-    const channel = interaction.options.getChannel('channel', true) as TextChannel;
+    const channel = interaction.options.getChannel("channel", true) as TextChannel;
 
     await setServerConfig(interaction.guildId, channel.id, interaction.guild?.name || "Unknown");
     logger.info(

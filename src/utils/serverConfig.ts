@@ -21,7 +21,7 @@ export async function getServerConfigs(): Promise<ServerConfig> {
   try {
     const { data, error } = await supabase
       .from(SERVERS_TABLE)
-      .select('guild_id, channel_id, server_name, message_id, last_updated, mobile_friendly');
+      .select("guild_id, channel_id, server_name, message_id, last_updated, mobile_friendly");
 
     if (error) {
       throw error;
@@ -101,13 +101,13 @@ export async function setMobileFriendly(guildId: string, enabled: boolean): Prom
     const { error } = await supabase
       .from(SERVERS_TABLE)
       .update({ mobile_friendly: enabled })
-      .eq('guild_id', guildId);
+      .eq("guild_id", guildId);
 
     if (error) {
       throw error;
     }
   } catch (error) {
-    logger.error({ err: error }, 'Error updating mobile friendly setting');
+    logger.error({ err: error }, "Error updating mobile friendly setting");
     throw error;
   }
 }

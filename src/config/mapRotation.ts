@@ -2,17 +2,17 @@ import type { MapRotation } from "../types";
 
 // Go to https://discord.com/developers/applications/your-app-id/emojis and add the emojis from `./assets/` and copy the emoji ID and replace them in the object below.
 export const CONDITION_EMOJIS: { [key: string]: string } = {
-  Harvester: '<:harvester:1444257508716974202>',
-  Night: '<:nightraid:1444257504883376128>',
-  Husks: '<:husks:1444257507706011718>',
-  Blooms: '<:lush:1444257506908966993>',
-  Storm: '<:electro:1444257509790715924>',
-  Caches: '<:cache:1444257510738493530>',
-  Probes: '<:probe:1444257504098779136>',
-  Tower: '<:spacetower_loot:1444257505961185482>',
-  Bunker: '<:bunker:1444257511598198794>',
-  Matriarch: '<:matriarch:1444257503100670073>',
-  None: ' ',
+  Harvester: "<:harvester:1444257508716974202>",
+  Night: "<:nightraid:1444257504883376128>",
+  Husks: "<:husks:1444257507706011718>",
+  Blooms: "<:lush:1444257506908966993>",
+  Storm: "<:electro:1444257509790715924>",
+  Caches: "<:cache:1444257510738493530>",
+  Probes: "<:probe:1444257504098779136>",
+  Tower: "<:spacetower_loot:1444257505961185482>",
+  Bunker: "<:bunker:1444257511598198794>",
+  Matriarch: "<:matriarch:1444257503100670073>",
+  None: " ",
 };
 
 export const CONDITION_COLORS: { [key: string]: number } = {
@@ -372,18 +372,18 @@ export function formatCondition(condition: string): string {
 
 export function formatLocationEvents(major: string, minor: string): string {
   const events = [];
-  
-  if (major !== 'None') {
+
+  if (major !== "None") {
     events.push(`${formatCondition(major)} (2x)`);
   }
-  
-  if (minor !== 'None') {
+
+  if (minor !== "None") {
     events.push(formatCondition(minor));
   }
-  
+
   if (events.length === 0) {
-    return 'None';
+    return "None";
   }
-  
-  return events.join('\n');
+
+  return events.join("\n");
 }

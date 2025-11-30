@@ -1,32 +1,49 @@
 // @ts-nocheck
-import puppeteer from 'puppeteer';
-import * as fs from 'fs';
-import * as path from 'path';
-import { CONDITION_EMOJIS, CONDITION_COLORS } from '../config/mapRotation';
-import { MapRotation } from '../types';
-import { logger } from './logger';
+
+import * as fs from "node:fs";
+import * as path from "node:path";
+import puppeteer, { type Browser } from "puppeteer";
+import { CONDITION_EMOJIS } from "../config/mapRotation";
+import type { MapRotation } from "../types";
+import { logger } from "./logger";
 
 // Map coordinates (percentage based on 2690x1515 image)
 // x: percentage from left, y: percentage from top
 const LOCATIONS = {
-  buriedCity: { x: (418 / 2690) * 100, y: (750 / 1515) * 100, label: 'Buried City' },
-  spaceport: { x: (740 / 2690) * 100, y: (300 / 1515) * 100, label: 'Spaceport' },
-  stellaMontis: { x: (1992 / 2690) * 100, y: (192 / 1515) * 100, label: 'Stella Montis' },
-  blueGate: { x: (2000 / 2690) * 100, y: (620 / 1515) * 100, label: 'Blue Gate' },
-  dam: { x: (1420 / 2690) * 100, y: (876 / 1515) * 100, label: 'Dam' },
+  buriedCity: {
+    x: (418 / 2690) * 100,
+    y: (750 / 1515) * 100,
+    label: "Buried City",
+  },
+  spaceport: {
+    x: (740 / 2690) * 100,
+    y: (300 / 1515) * 100,
+    label: "Spaceport",
+  },
+  stellaMontis: {
+    x: (1992 / 2690) * 100,
+    y: (192 / 1515) * 100,
+    label: "Stella Montis",
+  },
+  blueGate: {
+    x: (2000 / 2690) * 100,
+    y: (620 / 1515) * 100,
+    label: "Blue Gate",
+  },
+  dam: { x: (1420 / 2690) * 100, y: (876 / 1515) * 100, label: "Dam" },
 };
 
 const ICON_MAPPING: { [key: string]: string } = {
-  Harvester: 'harvester.png',
-  Night: 'nightraid.png',
-  Husks: 'husks.png',
-  Blooms: 'lush.png',
-  Storm: 'electro.png',
-  Caches: 'cache.png',
-  Probes: 'probe.png',
-  Tower: 'spacetower_loot.png',
-  Bunker: 'bunker.png',
-  Matriarch: 'matriarch.png',
+  Harvester: "harvester.png",
+  Night: "nightraid.png",
+  Husks: "husks.png",
+  Blooms: "lush.png",
+  Storm: "electro.png",
+  Caches: "cache.png",
+  Probes: "probe.png",
+  Tower: "spacetower_loot.png",
+  Bunker: "bunker.png",
+  Matriarch: "matriarch.png",
 };
 
 interface RenderData {
@@ -40,8 +57,8 @@ export class HtmlRenderer {
   private icons: { [key: string]: string };
 
   constructor() {
-    this.templatePath = path.join(__dirname, '../templates/map-status.html');
-    this.stylesPath = path.join(__dirname, '../templates/styles.css');
+    this.templatePath = path.join(__dirname, "../templates/map-status.html");
+    this.stylesPath = path.join(__dirname, "../templates/styles.css");
     this.icons = this.loadIcons();
   }
 
@@ -49,12 +66,12 @@ export class HtmlRenderer {
     const icons: { [key: string]: string } = {};
     for (const [condition, filename] of Object.entries(ICON_MAPPING)) {
       try {
-        const filePath = path.join(__dirname, '../assets', filename);
+        const filePath = path.join(__dirname, "../assets", filename);
         if (fs.existsSync(filePath)) {
           const buffer = fs.readFileSync(filePath);
-          icons[condition] = `data:image/png;base64,${buffer.toString('base64')}`;
+          icons[condition] = `data:image/png;base64,${buffer.toString("base64")}`;
         } else {
-            logger.warn(`Icon file not found: ${filePath}`);
+          logger.warn(`Icon file not found: ${filePath}`);
         }
       } catch (e) {
         logger.warn(`Failed to load icon for ${condition}: ${e}`);
@@ -64,127 +81,137 @@ export class HtmlRenderer {
   }
 
   async render(data: RenderData): Promise<Buffer> {
-    let browser;
+    let browser: Browser | undefined;
     try {
       browser = await puppeteer.launch({
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        args: ["--no-sandbox", "--disable-setuid-sandbox"],
       });
       const page = await browser.newPage();
 
-      await page.setViewport({ width: 1240, height: 1200, deviceScaleFactor: 2 });
+      await page.setViewport({
+        width: 1240,
+        height: 1200,
+        deviceScaleFactor: 2,
+      });
 
-      const htmlContent = fs.readFileSync(this.templatePath, 'utf-8');
-      const cssContent = fs.readFileSync(this.stylesPath, 'utf-8');
+      const htmlContent = fs.readFileSync(this.templatePath, "utf-8");
+      const cssContent = fs.readFileSync(this.stylesPath, "utf-8");
 
       const fullHtml = htmlContent.replace(
         '<link rel="stylesheet" href="styles.css">',
-        `<style>${cssContent}</style>`
+        `<style>${cssContent}</style>`,
       );
 
-      await page.setContent(fullHtml, { waitUntil: 'networkidle0' });
+      await page.setContent(fullHtml, { waitUntil: "networkidle0" });
 
-      const mapImagePath = path.join(__dirname, '../assets/map.png');
+      const mapImagePath = path.join(__dirname, "../assets/map.png");
       const mapImageBuffer = fs.readFileSync(mapImagePath);
-      const mapImageBase64 = `data:image/png;base64,${mapImageBuffer.toString('base64')}`;
-      await page.evaluate((data, locations, emojis, icons, mapImage) => {
-        const mapImg = document.getElementById('map-bg');
-        if (mapImg) mapImg.src = mapImage;
+      const mapImageBase64 = `data:image/png;base64,${mapImageBuffer.toString("base64")}`;
+      await page.evaluate(
+        (data, locations, emojis, icons, mapImage) => {
+          const mapImg = document.getElementById("map-bg");
+          if (mapImg) mapImg.src = mapImage;
 
-        const getIconHtml = (condition) => {
+          const getIconHtml = (condition) => {
             if (icons[condition]) {
-                return `<img src="${icons[condition]}" class="condition-icon" alt="${condition}">`;
+              return `<img src="${icons[condition]}" class="condition-icon" alt="${condition}">`;
             }
-            return emojis[condition] || '';
-        };
+            return emojis[condition] || "";
+          };
 
-        const overlaysContainer = document.getElementById('map-overlays');
-        if (overlaysContainer) {
-          Object.entries(locations).forEach(([key, loc]: [string, any]) => {
-            const major = data.current[`${key}Major` as keyof typeof data.current];
-            const minor = data.current[`${key}Minor` as keyof typeof data.current];
-            
-            let statusHtml = '';
-            if (major !== 'None') {
-              statusHtml += `<div class="status-row status-major">${getIconHtml(major)} ${major}</div>`;
-            }
-            if (minor !== 'None') {
-              statusHtml += `<div class="status-row status-minor">${getIconHtml(minor)} ${minor}</div>`;
-            }
-            if (major === 'None' && minor === 'None') {
-              const marker = document.createElement('div');
-              marker.className = 'location-marker';
-              marker.style.left = `${loc.x}%`;
-              marker.style.top = `${loc.y}%`;
-              marker.innerHTML = `
+          const overlaysContainer = document.getElementById("map-overlays");
+          if (overlaysContainer) {
+            Object.entries(locations).forEach(([key, loc]: [string, any]) => {
+              const major = data.current[`${key}Major` as keyof typeof data.current];
+              const minor = data.current[`${key}Minor` as keyof typeof data.current];
+
+              let statusHtml = "";
+              if (major !== "None") {
+                statusHtml += `<div class="status-row status-major">${getIconHtml(major)} ${major}</div>`;
+              }
+              if (minor !== "None") {
+                statusHtml += `<div class="status-row status-minor">${getIconHtml(minor)} ${minor}</div>`;
+              }
+              if (major === "None" && minor === "None") {
+                const marker = document.createElement("div");
+                marker.className = "location-marker";
+                marker.style.left = `${loc.x}%`;
+                marker.style.top = `${loc.y}%`;
+                marker.innerHTML = `
                 <div class="location-name">${loc.label}</div>
                 <div class="location-pin"></div>
               `;
-              overlaysContainer.appendChild(marker);
-              return;
-            }
+                overlaysContainer.appendChild(marker);
+                return;
+              }
 
-            const marker = document.createElement('div');
-            marker.className = 'location-marker';
-            marker.style.left = `${loc.x}%`;
-            marker.style.top = `${loc.y}%`;
-            marker.innerHTML = `
+              const marker = document.createElement("div");
+              marker.className = "location-marker";
+              marker.style.left = `${loc.x}%`;
+              marker.style.top = `${loc.y}%`;
+              marker.innerHTML = `
               <div class="location-name">${loc.label}</div>
               <div class="location-pin"></div>
               <div class="location-status">${statusHtml}</div>
             `;
-            overlaysContainer.appendChild(marker);
-          });
-        }
+              overlaysContainer.appendChild(marker);
+            });
+          }
 
-        const forecastGrid = document.getElementById('forecast-grid');
-        if (forecastGrid) {
-          data.forecast.forEach((rotation: any) => {
-            const card = document.createElement('div');
-            card.className = 'forecast-card';
-            
-            let eventsHtml = '';
-            const locs = ['dam', 'buriedCity', 'spaceport', 'blueGate', 'stellaMontis'];
-            let hasEvents = false;
+          const forecastGrid = document.getElementById("forecast-grid");
+          if (forecastGrid) {
+            data.forecast.forEach((rotation: any) => {
+              const card = document.createElement("div");
+              card.className = "forecast-card";
 
-            locs.forEach(loc => {
-              const major = rotation[`${loc}Major`];
-              if (major !== 'None') {
-                hasEvents = true;
-                eventsHtml += `
+              let eventsHtml = "";
+              const locs = ["dam", "buriedCity", "spaceport", "blueGate", "stellaMontis"];
+              let hasEvents = false;
+
+              locs.forEach((loc) => {
+                const major = rotation[`${loc}Major`];
+                if (major !== "None") {
+                  hasEvents = true;
+                  eventsHtml += `
                   <div class="event-row">
                     <span class="event-location">${loc.charAt(0).toUpperCase() + loc.slice(1)}</span>
                     <span class="event-name">${getIconHtml(major)} ${major}</span>
                   </div>
                 `;
+                }
+              });
+
+              if (!hasEvents) {
+                eventsHtml = '<div class="no-events">No Major Events</div>';
               }
-            });
 
-            if (!hasEvents) {
-              eventsHtml = '<div class="no-events">No Major Events</div>';
-            }
-
-            card.innerHTML = `
+              card.innerHTML = `
               <div class="forecast-header">
                 <span class="forecast-time">in ${rotation.hour - data.current.hour > 0 ? rotation.hour - data.current.hour : 24 + (rotation.hour - data.current.hour)}h</span>
                 <span class="forecast-label">Upcoming</span>
               </div>
               ${eventsHtml}
             `;
-            forecastGrid.appendChild(card);
-          });
-        }
-      }, data, LOCATIONS, CONDITION_EMOJIS, this.icons, mapImageBase64);
+              forecastGrid.appendChild(card);
+            });
+          }
+        },
+        data,
+        LOCATIONS,
+        CONDITION_EMOJIS,
+        this.icons,
+        mapImageBase64,
+      );
 
       // Screenshot the container
-      const element = await page.$('.container');
-      if (!element) throw new Error('Container not found');
-      
-      const imageBuffer = await element.screenshot({ type: 'png' });
-      return imageBuffer as Buffer;
+      const element = await page.$(".container");
+      if (!element) throw new Error("Container not found");
 
+      const imageBuffer = await element.screenshot({ type: "png" });
+      return imageBuffer as Buffer;
     } catch (error) {
-      logger.error({ err: error }, 'Error rendering HTML to image');
+      logger.error({ err: error }, "Error rendering HTML to image");
       throw error;
     } finally {
       if (browser) await browser.close();

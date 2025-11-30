@@ -1,11 +1,11 @@
-import { Client, GatewayIntentBits, Collection } from 'discord.js';
-import { config } from 'dotenv';
-import * as fs from 'fs';
-import * as path from 'path';
-import { Command, Event } from './types';
-import { initScheduler } from './utils/mapScheduler';
-import { logger } from './utils/logger';
-import { setupLockExpiration } from './utils/messageManager';
+import * as fs from "node:fs";
+import * as path from "node:path";
+import { Client, Collection, GatewayIntentBits } from "discord.js";
+import { config } from "dotenv";
+import type { Command, Event } from "./types";
+import { logger } from "./utils/logger";
+import { initScheduler } from "./utils/mapScheduler";
+import { setupLockExpiration } from "./utils/messageManager";
 
 // Load environment variables
 config();
@@ -54,7 +54,9 @@ for (const file of commandFiles) {
 const eventsPath = path.join(__dirname, "events");
 const eventFiles = fs
   .readdirSync(eventsPath)
-  .filter((file) => (file.endsWith('.ts') || file.endsWith('.js')) && !file.includes('interactionCreate'));
+  .filter(
+    (file) => (file.endsWith(".ts") || file.endsWith(".js")) && !file.includes("interactionCreate"),
+  );
 
 for (const file of eventFiles) {
   const filePath = path.join(eventsPath, file);
@@ -71,8 +73,9 @@ for (const file of eventFiles) {
 initScheduler(client);
 setupLockExpiration(client);
 
-import { handleInteraction } from './events/interactionCreate';
-client.on('interactionCreate', async (interaction) => {
+import { handleInteraction } from "./events/interactionCreate";
+
+client.on("interactionCreate", async (interaction) => {
   // Handle slash commands
   if (interaction.isChatInputCommand()) {
     const command = (client as any).commands.get(interaction.commandName);
@@ -85,8 +88,11 @@ client.on('interactionCreate', async (interaction) => {
       await command.execute(interaction);
     } catch (error) {
       logger.error({ err: error }, `Error executing command ${interaction.commandName}`);
-      const errorMessage = { content: 'There was an error while executing this command!', ephemeral: true };
-      
+      const errorMessage = {
+        content: "There was an error while executing this command!",
+        ephemeral: true,
+      };
+
       if (interaction.replied || interaction.deferred) {
         await interaction.followUp(errorMessage);
       } else {

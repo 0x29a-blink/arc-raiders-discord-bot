@@ -1,9 +1,7 @@
-
-import * as path from 'path';
-import { MAP_ROTATIONS } from '../config/mapRotation';
-import { MapRotation } from '../types';
-import { logger } from './logger';
-import { HtmlRenderer } from './htmlRenderer';
+import { MAP_ROTATIONS } from "../config/mapRotation";
+import type { MapRotation } from "../types";
+import { HtmlRenderer } from "./htmlRenderer";
+import { logger } from "./logger";
 
 const renderer = new HtmlRenderer();
 
@@ -35,7 +33,7 @@ export async function generateMapImage(currentRotation: MapRotation): Promise<Bu
 
     return buffer;
   } catch (error) {
-    logger.error({ err: error }, 'Error generating map image');
+    logger.error({ err: error }, "Error generating map image");
     throw error;
   }
 }
