@@ -16,6 +16,7 @@ import {
   getNextRotationTimestamp,
   MAP_ROTATIONS,
 } from "../config/mapRotation";
+import { getT } from "./i18n";
 import { generateMapImage } from "./imageGenerator";
 import { interactionLockManager } from "./interactionLock";
 import { logger } from "./logger";
@@ -24,15 +25,19 @@ import { getServerConfigs, setServerMessageState } from "./serverConfig";
 /**
  * Create the map rotation embed
  */
-export async function createMapRotationEmbed(mobileFriendly: boolean = false): Promise<{
+export async function createMapRotationEmbed(
+  mobileFriendly: boolean = false,
+  locale: string = "en",
+): Promise<{
   embed: EmbedBuilder;
   files: AttachmentBuilder[];
   components: ActionRowBuilder<ButtonBuilder>[];
 }> {
+  const t = getT(locale);
   const current = getCurrentRotation();
   const nextTimestamp = getNextRotationTimestamp();
 
-  const mapBuffer = await generateMapImage(current);
+  const mapBuffer = await generateMapImage(current, locale);
   const mapAttachment = new AttachmentBuilder(mapBuffer, {
     name: "map-status.png",
   });
@@ -41,38 +46,57 @@ export async function createMapRotationEmbed(mobileFriendly: boolean = false): P
     CONDITION_COLORS[current.damMajor] || CONDITION_COLORS[current.damMinor] || 0x5865f2;
 
   const embed = new EmbedBuilder()
-    .setTitle("🗺️ Arc Raiders - Map Rotation Status")
-    .setDescription(`**Current Conditions**\nNext rotation: <t:${nextTimestamp}:R>`)
+    .setTitle(t("map_rotation.title"))
+    .setDescription(`**${t("map_rotation.forecast.conditions")}**\n${t("map_rotation.forecast.next_rotation", { timestamp: nextTimestamp })}`)
     .setColor(primaryColor)
     .setImage("attachment://map-status.png");
+
+  // Helper to translate event names (basic mapping)
+  const translateEvent = (event: string) => {
+    if (event === "None") return t("map_rotation.events.none");
+    const key = event.toLowerCase();
+    return t(`map_rotation.events.${key}`, { defaultValue: event });
+  };
+
+  // Helper to format location events with translation
+  const formatLocationEventsTranslated = (major: string, minor: string) => {
+    const parts = [];
+    if (major !== "None") {
+      parts.push(`**${translateEvent(major)}**`);
+    }
+    if (minor !== "None") {
+      parts.push(translateEvent(minor));
+    }
+    return parts.length > 0 ? parts.join(" | ") : t("map_rotation.events.none");
+  };
 
   // Location Layout
   if (mobileFriendly) {
     // Mobile: Vertical list (non-inline fields)
     embed.addFields(
       {
-        name: "🏔️ Dam",
-        value: formatLocationEvents(current.damMajor, current.damMinor),
+        name: "🏔️ " + t("map_rotation.locations.dam"),
+        value: formatLocationEventsTranslated(current.damMajor, current.damMinor),
         inline: false,
       },
       {
-        name: "🏛️ Buried City",
-        value: formatLocationEvents(current.buriedCityMajor, current.buriedCityMinor),
+        name: "🏛️ " + t("map_rotation.locations.buried_city"),
+        value: formatLocationEventsTranslated(current.buriedCityMajor, current.buriedCityMinor),
         inline: false,
       },
       {
-        name: "🚀 Spaceport",
-        value: formatLocationEvents(current.spaceportMajor, current.spaceportMinor),
+        name: "🚀 " + t("map_rotation.locations.spaceport"),
+        value: formatLocationEventsTranslated(current.spaceportMajor, current.spaceportMinor),
         inline: false,
       },
       {
-        name: "🌉 Blue Gate",
-        value: formatLocationEvents(current.blueGateMajor, current.blueGateMinor),
+        name: "🌉 " + t("map_rotation.locations.blue_gate"),
+        value: formatLocationEventsTranslated(current.blueGateMajor, current.blueGateMinor),
         inline: false,
       },
       {
-        name: "🏔️ Stella Montis",
-        value: formatLocationEvents(current.stellaMontisMajor, current.stellaMontisMinor),
+        name: "🏔️ " + t("map_rotation.locations.stella_montis"),
+        value: formatLocationEventsTranslated(current.stellaMontisMajor, current.stellaMontisMinor),
         inline: false,
       },
     );
@@ -80,29 +104,29 @@ export async function createMapRotationEmbed(mobileFriendly: boolean = false): P
     // Desktop: Grid (inline fields)
     embed.addFields(
       {
-        name: "🏔️ Dam",
-        value: formatLocationEvents(current.damMajor, current.damMinor),
+        name: "🏔️ " + t("map_rotation.locations.dam"),
+        value: formatLocationEventsTranslated(current.damMajor, current.damMinor),
         inline: true,
       },
       {
-        name: "🏛️ Buried City",
-        value: formatLocationEvents(current.buriedCityMajor, current.buriedCityMinor),
+        name: "🏛️ " + t("map_rotation.locations.buried_city"),
+        value: formatLocationEventsTranslated(current.buriedCityMajor, current.buriedCityMinor),
         inline: true,
       },
       {
-        name: "🚀 Spaceport",
-        value: formatLocationEvents(current.spaceportMajor, current.spaceportMinor),
+        name: "🚀 " + t("map_rotation.locations.spaceport"),
+        value: formatLocationEventsTranslated(current.spaceportMajor, current.spaceportMinor),
         inline: true,
       },
       {
-        name: "🌉 Blue Gate",
-        value: formatLocationEvents(current.blueGateMajor, current.blueGateMinor),
+        name: "🌉 " + t("map_rotation.locations.blue_gate"),
+        value: formatLocationEventsTranslated(current.blueGateMajor, current.blueGateMinor),
         inline: true,
       },
       { name: "\u200b", value: "\u200b", inline: true },
       {
-        name: "🏔️ Stella Montis",
-        value: formatLocationEvents(current.stellaMontisMajor, current.stellaMontisMinor),
+        name: "🏔️ " + t("map_rotation.locations.stella_montis"),
+        value: formatLocationEventsTranslated(current.stellaMontisMajor, current.stellaMontisMinor),
         inline: true,
       },
     );
@@ -121,32 +145,33 @@ export async function createMapRotationEmbed(mobileFriendly: boolean = false): P
       const timeLabel = `<t:${timestamp}:R>`;
 
       const events = [];
-      if (rotation.damMajor !== "None") events.push(`Dam: ${CONDITION_EMOJIS[rotation.damMajor]}`);
+      if (rotation.damMajor !== "None")
+        events.push(`${t("map_rotation.locations.dam")}: ${CONDITION_EMOJIS[rotation.damMajor]}`);
       if (rotation.buriedCityMajor !== "None")
-        events.push(`Buried: ${CONDITION_EMOJIS[rotation.buriedCityMajor]}`);
+        events.push(`${t("map_rotation.locations.buried_city")}: ${CONDITION_EMOJIS[rotation.buriedCityMajor]}`);
       if (rotation.spaceportMajor !== "None")
-        events.push(`Space: ${CONDITION_EMOJIS[rotation.spaceportMajor]}`);
+        events.push(`${t("map_rotation.locations.spaceport")}: ${CONDITION_EMOJIS[rotation.spaceportMajor]}`);
       if (rotation.blueGateMajor !== "None")
-        events.push(`Gate: ${CONDITION_EMOJIS[rotation.blueGateMajor]}`);
+        events.push(`${t("map_rotation.locations.blue_gate")}: ${CONDITION_EMOJIS[rotation.blueGateMajor]}`);
       if (rotation.stellaMontisMajor !== "None")
-        events.push(`Stella: ${CONDITION_EMOJIS[rotation.stellaMontisMajor]}`);
+        events.push(`${t("map_rotation.locations.stella_montis")}: ${CONDITION_EMOJIS[rotation.stellaMontisMajor]}`);
 
       if (events.length > 0) {
         forecastText += `**${timeLabel}** • ${events.join(" | ")}\n`;
       } else {
-        forecastText += `**${timeLabel}** • No Major Events\n`;
+        forecastText += `**${timeLabel}** • ${t("map_rotation.forecast.no_major_events")}\n`;
       }
     }
 
     embed.addFields({
-      name: "━━━━━━ 🔮 FORECAST (Next 6 Hours) ━━━━━━",
-      value: forecastText || "No major events upcoming.",
+      name: t("map_rotation.forecast.header"),
+      value: forecastText || t("map_rotation.forecast.no_events"),
       inline: false,
     });
   } else {
     // Desktop: Inline Fields
     embed.addFields({
-      name: "━━━━━━ 🔮 FORECAST (Next 6 Hours) ━━━━━━",
+      name: t("map_rotation.forecast.header"),
       value: "\u200b",
       inline: false,
     });
@@ -161,55 +186,56 @@ export async function createMapRotationEmbed(mobileFriendly: boolean = false): P
       const timeLabel = `<t:${timestamp}:R>`;
 
       const events = [];
-      if (rotation.damMajor !== "None") events.push(`Dam: ${CONDITION_EMOJIS[rotation.damMajor]}`);
+      if (rotation.damMajor !== "None")
+        events.push(`${t("map_rotation.locations.dam")}: ${CONDITION_EMOJIS[rotation.damMajor]}`);
       if (rotation.buriedCityMajor !== "None")
-        events.push(`Buried: ${CONDITION_EMOJIS[rotation.buriedCityMajor]}`);
+        events.push(`${t("map_rotation.locations.buried_city")}: ${CONDITION_EMOJIS[rotation.buriedCityMajor]}`);
       if (rotation.spaceportMajor !== "None")
-        events.push(`Space: ${CONDITION_EMOJIS[rotation.spaceportMajor]}`);
+        events.push(`${t("map_rotation.locations.spaceport")}: ${CONDITION_EMOJIS[rotation.spaceportMajor]}`);
       if (rotation.blueGateMajor !== "None")
-        events.push(`Gate: ${CONDITION_EMOJIS[rotation.blueGateMajor]}`);
+        events.push(`${t("map_rotation.locations.blue_gate")}: ${CONDITION_EMOJIS[rotation.blueGateMajor]}`);
       if (rotation.stellaMontisMajor !== "None")
-        events.push(`Stella: ${CONDITION_EMOJIS[rotation.stellaMontisMajor]}`);
+        events.push(`${t("map_rotation.locations.stella_montis")}: ${CONDITION_EMOJIS[rotation.stellaMontisMajor]}`);
 
-      const eventText = events.length > 0 ? events.join(" | ") : "No Major Events";
+      const eventText = events.length > 0 ? events.join(" | ") : t("map_rotation.forecast.no_major_events");
 
       timeCol += `${timeLabel}\n`;
       conditionCol += `${eventText}\n`;
     }
 
     embed.addFields(
-      { name: "Time Until", value: timeCol, inline: true },
-      { name: "Conditions", value: conditionCol, inline: true },
+      { name: t("map_rotation.forecast.time_until"), value: timeCol, inline: true },
+      { name: t("map_rotation.forecast.conditions"), value: conditionCol, inline: true },
       { name: "\u200b", value: "\u200b", inline: true },
     );
   }
 
-  embed.setTimestamp().setFooter({ text: "Arc Raiders Bot • Updates every hour" });
+  embed.setTimestamp().setFooter({ text: t("map_rotation.footer") });
 
   const row1 = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId("view_map_dam")
-      .setLabel("Dam")
+      .setLabel(t("map_rotation.buttons.dam"))
       .setStyle(ButtonStyle.Secondary)
       .setEmoji("🏔️"),
     new ButtonBuilder()
       .setCustomId("view_map_buriedCity")
-      .setLabel("Buried City")
+      .setLabel(t("map_rotation.buttons.buried_city"))
       .setStyle(ButtonStyle.Secondary)
       .setEmoji("🏛️"),
     new ButtonBuilder()
       .setCustomId("view_map_spaceport")
-      .setLabel("Spaceport")
+      .setLabel(t("map_rotation.buttons.spaceport"))
       .setStyle(ButtonStyle.Secondary)
       .setEmoji("🚀"),
     new ButtonBuilder()
       .setCustomId("view_map_blueGate")
-      .setLabel("Blue Gate")
+      .setLabel(t("map_rotation.buttons.blue_gate"))
       .setStyle(ButtonStyle.Secondary)
       .setEmoji("🌉"),
     new ButtonBuilder()
       .setCustomId("view_map_stellaMontis")
-      .setLabel("Stella Montis")
+      .setLabel(t("map_rotation.buttons.stella_montis"))
       .setStyle(ButtonStyle.Secondary)
       .setEmoji("🏔️"),
   );
@@ -217,17 +243,17 @@ export async function createMapRotationEmbed(mobileFriendly: boolean = false): P
   const row2 = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId("view_mode_major")
-      .setLabel("Show Major Events")
+      .setLabel(t("map_rotation.buttons.show_major"))
       .setStyle(ButtonStyle.Primary)
       .setEmoji("⚔️"),
     new ButtonBuilder()
       .setCustomId("view_mode_minor")
-      .setLabel("Show Minor Events")
+      .setLabel(t("map_rotation.buttons.show_minor"))
       .setStyle(ButtonStyle.Primary)
       .setEmoji("🔍"),
     new ButtonBuilder()
       .setCustomId("view_overview")
-      .setLabel("Home")
+      .setLabel(t("map_rotation.buttons.home"))
       .setStyle(ButtonStyle.Secondary)
       .setEmoji("🏠")
       .setDisabled(true),
@@ -260,8 +286,11 @@ export async function postOrUpdateInChannel(
     const configs = await getServerConfigs();
     const config = configs[guildId];
     const mobileFriendly = config?.mobileFriendly ?? false;
+    // Use guild preferred locale if available, otherwise default to 'en'
+    // Actually, use our server config locale
+    const locale = config?.locale || channel.guild?.preferredLocale || "en";
 
-    const { embed, files, components } = await createMapRotationEmbed(mobileFriendly);
+    const { embed, files, components } = await createMapRotationEmbed(mobileFriendly, locale);
     let message: Message;
 
     if (
@@ -331,7 +360,7 @@ const catchPinError = (error: any) => {
  * @param client The Discord client.
  */
 export function setupLockExpiration(client: Client) {
-  interactionLockManager.setExpirationCallback(async (messageId, channelId, _guildId) => {
+  interactionLockManager.setExpirationCallback(async (messageId, channelId, guildId) => {
     try {
       const channel = (await client.channels.fetch(channelId)) as TextChannel;
       if (!channel || !channel.isTextBased()) return;
@@ -353,7 +382,13 @@ export function setupLockExpiration(client: Client) {
       }
 
       if (!isHome) {
-        const { embed, files, components } = await createMapRotationEmbed();
+        // Get config for mobile friendly
+        const configs = await getServerConfigs();
+        const config = configs[guildId];
+        const mobileFriendly = config?.mobileFriendly ?? false;
+        const locale = config?.locale || channel.guild?.preferredLocale || "en";
+
+        const { embed, files, components } = await createMapRotationEmbed(mobileFriendly, locale);
         await message.edit({
           embeds: [embed],
           files: files,
